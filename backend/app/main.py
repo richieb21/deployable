@@ -1,7 +1,5 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from app.api.endpoints import analysis
 from app.core.config import settings
 
 app = FastAPI(
@@ -10,22 +8,20 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(analysis.router, prefix="/api/v1")
+# app.include_router(analysis.router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Deployment Readiness Analyzer API"}
+    return {"message": "Welcome to Deployable"}
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"} 
+    return {"status": "All systems functional at Deployable!"} 

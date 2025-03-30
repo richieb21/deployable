@@ -3,7 +3,7 @@ from enum import Enum
 from pydantic import BaseModel, HttpUrl, Field
 
 
-class RecommendationSeverity(str, Enum):
+class Severity(str, Enum):
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -19,14 +19,23 @@ class RecommendationCategory(str, Enum):
     COMPLIANCE = "compliance"
     COST = "COST"
 
+class TechStack(BaseModel):
+    frontend: List[str] = Field(default_factory=list, description="Frontend technologies")
+    backend: List[str] = Field(default_factory=list, description="Backend technologies")
+    infra: List[str] = Field(default_factory=list, description="Project Infrastructure")
+
 class Recommendation(BaseModel):
     title: str
     description: str
-    severity: RecommendationSeverity
+    file_path: str
+    severity: Severity
     category: RecommendationCategory
     action_items: List[str]
     code_snippets: Optional[Dict[str, str]] = None
     references: Optional[List[str]] = None
+
+class Insights(BaseModel):
+    recommendations: List[Recommendation] = Field(default_factory=list, description="Recommendations")
 
 
 class AnalysisRequest(BaseModel):

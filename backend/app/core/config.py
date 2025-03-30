@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Deployment Readiness Analyzer"
     
     # CORS settings
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "https://localhost:3000"]
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "https://frontend-url.com"]
     
     # API Keys
     GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "")
@@ -17,7 +17,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     
     # Rate limiting
-    RATE_LIMIT_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "30"))
+    RATE_LIMIT_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "5"))
+    RATE_LIMIT_PER_HOUR: int = int(os.getenv("RATE_LIMIT_PER_HOUR", "100"))
     
     class Config:
         env_file = ".env"
