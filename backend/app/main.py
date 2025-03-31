@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
+from app.api.endpoints import analysis
 
 app = FastAPI(
     title="Deployment Readiness Analyzer",
@@ -16,7 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# app.include_router(analysis.router, prefix="/api/v1")
+app.include_router(analysis.router)
 
 @app.get("/")
 async def root():
