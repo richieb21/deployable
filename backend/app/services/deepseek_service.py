@@ -45,7 +45,7 @@ class DeepseekService:
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
-                messages=messages,
+                messages=messages
             )
             raw_content = response.choices[0].message.content
             json_content = self._extract_json(raw_content)
@@ -170,6 +170,7 @@ class DeepseekService:
         ```
         
         Focus on genuine deployment concerns rather than minor code style issues. Provide concrete, specific recommendations.
+        Only suggest recommendations that determine if the app can be deployed safely and avoid getting exploited - dont be nitpicky and suggest insignificant things. 
         """
         
         # Add the files to analyze
