@@ -266,4 +266,3 @@ class GithubService:
 if __name__ == "__main__":
     gh = GithubService()
     print(gh.list_filenames("https://github.com/steventanyang/market_loo"))
-    print(gh._get_file_contents("steventanyang", "market_loo", "marketloo/ai/project_data/scraper.py"))

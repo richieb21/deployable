@@ -66,7 +66,7 @@ def analyze_file_batch(files_batch: List[Dict[str, str]], api_key: Optional[str]
         logger.error(f"Error in file batch analysis: {str(e)}")
         return []  # Return empty list instead of failing the entire process
 
-def chunk_files(files: List[Dict[str, str]], chunk_size: int = 5) -> List[List[Dict[str, str]]]:
+def chunk_files(files: List[Dict[str, str]], chunk_size: int = 2) -> List[List[Dict[str, str]]]:
     """
     Split files into chunks for parallel processing.
     
@@ -86,14 +86,11 @@ async def analyze_repository(request: AnalysisRequest):
     """
     try:
         start_time = datetime.now()
-        logger.info(f"Starting analysis for repository: {request.repo_url}")
+        repo_url = str(request.repo_url)
+
+        all_files = github_service.list_filenames(repo_url)
         
-        # Step 1: List all files in the repository
-        logger.info("Listing all files in repository")
-        all_files = github_service.list_filenames(request.repo_url)
-        logger.info(f"Found {len(all_files)} files in repository")
-        
-        logger.info("Identifying important files for analysis")
+        # identify important files to analyze
         deepseek_service = DeepseekService() 
         files_prompt = deepseek_service.identify_files_prompt(all_files)
         files_response = deepseek_service.call_model(files_prompt)
@@ -106,13 +103,10 @@ async def analyze_repository(request: AnalysisRequest):
             important_files = {"frontend": [], "backend": [], "infra": []}
         
         files_to_analyze = []
-        for category, file_list in important_files.items():
-            logger.info(f"Category {category}: {len(file_list)} files")
+        for _, file_list in important_files.items():
             files_to_analyze.extend(file_list)
         
-        logger.info(f"Fetching content for {len(files_to_analyze)} files")
-        file_contents = github_service.get_file_content_batch(request.repo_url, files_to_analyze)
-        logger.info(f"Successfully fetched {len(file_contents)} file contents")
+        file_contents = github_service.get_file_content_batch(repo_url, files_to_analyze)
         
         file_chunks = chunk_files(file_contents)
         logger.info(f"Split files into {len(file_chunks)} chunks")
@@ -120,9 +114,9 @@ async def analyze_repository(request: AnalysisRequest):
         all_recommendations = []
         
         # Use a thread pool executor for parallel processing
-        with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(file_chunks), 5)) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(file_chunks), 8)) as executor:
             future_to_chunk = {
-                executor.submit(analyze_file_batch, chunk): i 
+                executor.submit(analyze_file_batch, chunk, request.api_key if hasattr(request, 'api_key') else None): i 
                 for i, chunk in enumerate(file_chunks)
             }
             
@@ -140,23 +134,21 @@ async def analyze_repository(request: AnalysisRequest):
                     logger.error(f"Error processing chunk {chunk_index}: {str(e)}")
         
         # Convert to Recommendation objects for validation
-        validated_recommendations = []
-        for rec in all_recommendations:
-            try:
-                validated_recommendations.append(Recommendation(**rec))
-            except Exception as e:
-                logger.error(f"Invalid recommendation format: {str(e)}")
+        # validated_recommendations = []
+        # for rec in all_recommendations:
+        #     try:
+        #         validated_recommendations.append(Recommendation(**rec))
+        #     except Exception as e:
+        #         logger.error(f"Invalid recommendation format: {str(e)}")
         
-        logger.info(f"Analysis complete. Found {len(validated_recommendations)} recommendations")
+        logger.info(f"Analysis complete. Found {len(all_recommendations)} recommendations")
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
         
         # Step 5: Return the analysis results
         return AnalysisResponse(
-            repository=str(request.repo_url),
-            recommendations=validated_recommendations,
-            summary=f"Analysis completed in {duration:.2f} seconds. Found {len(validated_recommendations)} issues across {len(file_contents)} files.",
-            detected_technologies=important_files,
+            repository=repo_url,
+            recommendations=all_recommendations,
             analysis_timestamp=end_time.isoformat()
         )
         

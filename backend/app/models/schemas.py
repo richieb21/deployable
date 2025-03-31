@@ -4,19 +4,19 @@ from pydantic import BaseModel, HttpUrl, Field
 
 
 class Severity(str, Enum):
-    CRITICAL = "critical"
-    HIGH = "high"
-    MEDIUM = "medium"
-    LOW = "low"
-    INFO = "info"
+    CRITICAL = "CRITICAL"
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+    INFO = "INFO"
 
 
 class RecommendationCategory(str, Enum):
-    SECURITY = "security"
-    PERFORMANCE = "performance"
-    INFRASTRUCTURE = "infrastructure"
-    RELIABILITY = "reliability"
-    COMPLIANCE = "compliance"
+    SECURITY = "SECURITY"
+    PERFORMANCE = "PERFORMANCE"
+    INFRASTRUCTURE = "INFRASTRUCTURE"
+    RELIABILITY = "RELIABILITY"
+    COMPLIANCE = "COMPLIANCE"
     COST = "COST"
 
 class TechStack(BaseModel):
@@ -31,8 +31,6 @@ class Recommendation(BaseModel):
     severity: Severity
     category: RecommendationCategory
     action_items: List[str]
-    code_snippets: Optional[Dict[str, str]] = None
-    references: Optional[List[str]] = None
 
 class Insights(BaseModel):
     recommendations: List[Recommendation] = Field(default_factory=list, description="Recommendations")
@@ -40,17 +38,17 @@ class Insights(BaseModel):
 
 class AnalysisRequest(BaseModel):
     repo_url: HttpUrl = Field(..., description="GitHub repository URL to analyze")
-    target_platforms: Optional[List[str]] = Field(
-        default=None, description="Specific deployment platforms to target"
-    )
-    preferences: Optional[Dict[str, Any]] = Field(
-        default=None, description="User preferences for deployment"
-    )
+    # target_platforms: Optional[List[str]] = Field(
+    #     default=None, description="Specific deployment platforms to target"
+    # )
+    # preferences: Optional[Dict[str, Any]] = Field(
+    #     default=None, description="User preferences for deployment"
+    # )
 
 
 class AnalysisResponse(BaseModel):
     repository: str
     recommendations: List[Recommendation]
-    summary: str
-    detected_technologies: Dict[str, List[str]]
+    # summary: str
+    # detected_technologies: Dict[str, List[str]]
     analysis_timestamp: str 
