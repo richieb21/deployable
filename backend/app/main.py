@@ -2,6 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.endpoints import analysis
+from app.core.logging_config import setup_logging
+
+import warnings
+
+setup_logging("INFO")
 
 app = FastAPI(
     title="Deployment Readiness Analyzer",
@@ -15,6 +20,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
+)
+
+warnings.filterwarnings(
+    "ignore",
+    message="urllib3 .* only supports OpenSSL .*",
+    category=UserWarning
 )
 
 app.include_router(analysis.router)
