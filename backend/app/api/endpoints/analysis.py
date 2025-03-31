@@ -66,7 +66,7 @@ def analyze_file_batch(files_batch: List[Dict[str, str]], api_key: Optional[str]
         logger.error(f"Error in file batch analysis: {str(e)}")
         return []  # Return empty list instead of failing the entire process
 
-def chunk_files(files: List[Dict[str, str]], chunk_size: int = 2) -> List[List[Dict[str, str]]]:
+def chunk_files(files: List[Dict[str, str]], chunk_size: int = 1) -> List[List[Dict[str, str]]]:
     """
     Split files into chunks for parallel processing.
     
@@ -113,7 +113,7 @@ async def analyze_repository(request: AnalysisRequest):
         all_recommendations = []
         
         # Use a thread pool executor for parallel processing
-        with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(file_chunks), 8)) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(file_chunks), 15)) as executor:
             future_to_chunk = {
                 executor.submit(analyze_file_batch, chunk, request.api_key if hasattr(request, 'api_key') else None): i 
                 for i, chunk in enumerate(file_chunks)

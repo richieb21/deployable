@@ -24,6 +24,19 @@ class GithubService:
         # Cache for repository metadata to avoid redundant API calls
         self._repo_cache = {}
 
+        self.excluded_files = [
+            'package.json',
+            'package-lock.json',
+            'yarn.lock',
+            'node_modules',
+            '.DS_Store',
+            'Thumbs.db',
+            '.gitignore',
+            '.gitattributes',
+            'LICENSE',
+            'LICENCE',
+        ]
+
         if not self.github_token:
             logger.warning("No Personal Access Token provided. Using unauthenticated requests (60/hr)")
 
@@ -188,7 +201,7 @@ class GithubService:
         return [
             item["path"]
             for item in tree_items
-            if item["type"] == "blob"
+            if item["type"] == "blob" and item["path"].split("/")[-1] not in self.excluded_files
         ]
     
     def _get_file_contents(self, owner: str, repo: str, path: str) -> Optional[Dict[str, str]]:
