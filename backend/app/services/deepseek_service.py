@@ -45,7 +45,8 @@ class DeepseekService:
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
-                messages=messages
+                messages=messages,
+                temperature=0.3
             )
             raw_content = response.choices[0].message.content
             json_content = self._extract_json(raw_content)
@@ -107,19 +108,20 @@ class DeepseekService:
             Formatted prompt string
         """
         prompt = f"""
-        Analyze the following list of file paths in a project and identify ONLY the 10-15 MOST CRITICAL files for deployment readiness.
-        Focus strictly on:
-        1. Security concerns (auth files, env files)
-        2. Infrastructure configuration (Docker, CI/CD, serverless)
-        3. Environment setup (.env files, config)
-        4. Main application entry points
-
-        IGNORE test files, documentation, package files and non-essential UI components.
-
+        Identify ONLY the 10-15 MOST CRITICAL deployment files from this list:
         {str(files)}
         
-        Format your response as JSON with keys frontend, backend and infra each with a respective array of file paths. 
-        LIMIT your selection to only the most important files - no more than 15 files total across all categories.
+        Focus only on:
+        - Security files (auth, env)
+        - Infrastructure (Docker, CI/CD)
+        - Config files
+        - Main app entry points
+        
+        Ignore tests, docs, packages, and UI components.
+        
+        Return strictly JSON format: 
+        {{"frontend": [], "backend": [], "infra": []}}
+        Maximum 15 files total.
         """
 
         return prompt
@@ -135,62 +137,37 @@ class DeepseekService:
             Formatted prompt string for the LLM
         """
         
-        # Start with the base instruction
         prompt = """
-        As a deployment specialist, analyze these files for an application that is preparing for deployment.
-        Identify specific issues related to deployment readiness across these categories:
+        Analyze these files for deployment readiness issues in these categories:
+        SECURITY, PERFORMANCE, INFRASTRUCTURE, RELIABILITY, COMPLIANCE, COST
         
-        1. SECURITY: Authentication, authorization, secrets management, input validation, etc.
-        2. PERFORMANCE: Caching, asset optimization, database queries, API optimization
-        3. INFRASTRUCTURE: Containerization, CI/CD configuration, environment setup
-        4. RELIABILITY: Error handling, rate limiting, retry logic, fallback mechanisms
-        5. COMPLIANCE: License compliance, documentation, test coverage
-        6. COST: Resource usage, optimization opportunities
-        
-        For each issue found, provide:
-        - A clear title describing the issue
-        - A description explaining the problem
-        - The exact file path where the issue was identified
-        - Severity level (CRITICAL, HIGH, MEDIUM, LOW, INFO)
-        - Appropriate category (SECURITY, PERFORMANCE, INFRASTRUCTURE, RELIABILITY, COMPLIANCE, COST)
-        - Actionable steps to resolve the issue
-        
-        Format your response as a JSON array of recommendations following this structure:
-        ```
+        Return ONLY a JSON array of issues:
         [
           {
-            "title": "Hardcoded API Keys",
-            "description": "API keys are hardcoded in the source code, which is a security risk.",
-            "file_path": "path/to/file.js",
-            "severity": "CRITICAL",
-            "category": "SECURITY",
-            "action_items": ["Move API keys to environment variables", "Use a secrets management solution"],
+            "title": "Brief issue title",
+            "description": "Concise problem description",
+            "file_path": "path/to/file",
+            "severity": "CRITICAL|HIGH|MEDIUM|LOW|INFO",
+            "category": "SECURITY|PERFORMANCE|INFRASTRUCTURE|RELIABILITY|COMPLIANCE|COST",
+            "action_items": ["Action 1", "Action 2"]
           }
         ]
-        ```
         
-        Focus on genuine deployment concerns rather than minor code style issues. Provide concrete, specific recommendations.
-        Only suggest recommendations that determine if the app can be deployed safely and avoid getting exploited - dont be nitpicky and suggest insignificant things. 
+        Focus ONLY on significant deployment issues. Ignore minor code style issues.
         """
         
-        # Add the files to analyze
         prompt += "\n\nFiles to analyze:\n\n"
         
         for file in files:
             prompt += f"File: {file['path']}\n```\n{file['content']}\n```\n\n"
-        
-        # Add a reminder about the response format
-        prompt += """
-        Remember to return ONLY a valid JSON array of recommendations. Each recommendation should include all fields mentioned above.
-        If no issues are found in a particular file, do not include it in the recommendations.
-        """
         
         return prompt
 
     def estimate_tokens(self, text: str) -> int:
         """
         Estimate the number of tokens in a text string.
-        Very rough estimation - 1 token ~= 4 characters for English text.
+        More accurate estimation - approx 4 chars per token for english text,
+        but code and special characters often use more.
         
         Args:
             text: The input text
@@ -198,4 +175,13 @@ class DeepseekService:
         Returns:
             Estimated token count
         """
-        return len(text) // 4
+        # More accurate token estimation
+        # Count code blocks and special characters more heavily
+        char_count = len(text)
+        code_block_count = text.count("```")
+        special_char_count = sum(1 for c in text if not c.isalnum() and not c.isspace())
+        
+        # Adjust for code blocks and special characters
+        adjusted_count = char_count + (code_block_count * 5) + (special_char_count * 0.5)
+        
+        return int(adjusted_count // 3.5)  # Slightly more conservative than 4
