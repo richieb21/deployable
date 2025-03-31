@@ -40,10 +40,27 @@ def analyze_file_batch(files_batch: List[Dict[str, str]], api_key: Optional[str]
         analysis_prompt = deepseek_client.get_file_analysis_prompt(files_batch)
         analysis_response = deepseek_client.call_model(analysis_prompt)
         
-        # Parse the response and return recommendations
-        recommendations = json.loads(analysis_response)
-        logger.info(f"Batch analysis complete, found {len(recommendations)} recommendations")
-        return recommendations
+        try:
+            recommendations = json.loads(analysis_response)
+            logger.info(f"Batch analysis complete, found {len(recommendations)} recommendations")
+            return recommendations
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response: {str(e)}")
+            logger.error(f"Raw response snippet: {analysis_response[:200]}...")
+            
+            return [{
+                "title": "JSON Parsing Error",
+                "description": f"Failed to parse model response: {str(e)}. This is likely due to an invalid JSON format returned by the model.",
+                "file_path": "N/A",
+                "severity": "LOW",
+                "category": "INFRASTRUCTURE",
+                "action_items": ["Retry the analysis", "Check model response format"],
+                "code_snippets": {
+                    "before": "N/A",
+                    "after": "N/A"
+                },
+                "references": []
+            }]
         
     except Exception as e:
         logger.error(f"Error in file batch analysis: {str(e)}")
@@ -170,34 +187,24 @@ async def test_analysis():
         file_chunks = chunk_files(file_contents, chunk_size=4)
         
         all_recommendations = []
-        deepseek_client = DeepseekService()
         
-        for i, chunk in enumerate(file_chunks):
-            logger.info(f"Processing chunk {i} with {len(chunk)} files")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(file_chunks), 5)) as executor:
+            future_to_chunk = {
+                executor.submit(analyze_file_batch, chunk): i 
+                for i, chunk in enumerate(file_chunks)
+            }
             
-            try:
-                analysis_prompt = deepseek_client.get_file_analysis_prompt(chunk)
-                analysis_response = deepseek_client.call_model(analysis_prompt)
-                
+            for future in concurrent.futures.as_completed(future_to_chunk):
+                chunk_index = future_to_chunk[future]
                 try:
-                    parsed_recommendations = json.loads(analysis_response)
-                    if isinstance(parsed_recommendations, list):
-                        all_recommendations.extend(parsed_recommendations)
-                    else:
-                        logger.warning(f"Response from chunk {i} is not a list: {type(parsed_recommendations)}")
-                        all_recommendations.append(parsed_recommendations)
-                except json.JSONDecodeError as e:
-                    logger.error(f"Failed to parse JSON from chunk {i}: {str(e)}")
-                    logger.error(f"Raw response snippet: {analysis_response[:200]}...")
-                    # Store the raw response for debugging
-                    all_recommendations.append({
-                        "error": "JSON parsing failed",
-                        "raw_response_preview": analysis_response[:500],
-                        "chunk_index": i
-                    })
+                    chunk_recommendations = future.result()
+                    logger.info(f"Chunk {chunk_index} processed with {len(chunk_recommendations)} recommendations")
                     
-            except Exception as e:
-                logger.error(f"Error processing chunk {i}: {str(e)}")
+                    with recommendations_lock:
+                        all_recommendations.extend(chunk_recommendations)
+                        
+                except Exception as e:
+                    logger.error(f"Error processing chunk {chunk_index}: {str(e)}")
         
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
