@@ -85,7 +85,6 @@ async def analyze_repository(request: AnalysisRequest):
     Analyze a GitHub repository for deployment readiness using multiple parallel DeepSeek clients.
     """
     try:
-        start_time = datetime.now()
         repo_url = str(request.repo_url)
 
         all_files = github_service.list_filenames(repo_url)
@@ -143,7 +142,6 @@ async def analyze_repository(request: AnalysisRequest):
         
         logger.info(f"Analysis complete. Found {len(all_recommendations)} recommendations")
         end_time = datetime.now()
-        duration = (end_time - start_time).total_seconds()
         
         # Step 5: Return the analysis results
         return AnalysisResponse(
@@ -156,57 +154,3 @@ async def analyze_repository(request: AnalysisRequest):
         logger.error(f"Analysis failed: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
-
-@router.get("/test")
-async def test_analysis():
-    try:
-        start_time = datetime.now()
-        repo_url = "https://github.com/steventanyang/market_loo"
-        
-        hardcoded_files = [
-            '.gitignore', 
-            'marketloo/.env.example', 
-            'marketloo/.gitignore', 
-            'marketloo/README.md', 
-            'marketloo/agents/common/utils.ts', 
-            'marketloo/agents/simple_trader/package.json', 
-            'marketloo/agents/simple_trader/src/index.ts', 
-            'marketloo/agents/simple_trader/tsconfig.json', 
-            'marketloo/agents/thoughtful_trader/markets.json', 
-        ]
-            
-        file_contents = github_service.get_file_content_batch(repo_url, hardcoded_files)
-        file_chunks = chunk_files(file_contents, chunk_size=4)
-        
-        all_recommendations = []
-        
-        with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(file_chunks), 5)) as executor:
-            future_to_chunk = {
-                executor.submit(analyze_file_batch, chunk): i 
-                for i, chunk in enumerate(file_chunks)
-            }
-            
-            for future in concurrent.futures.as_completed(future_to_chunk):
-                chunk_index = future_to_chunk[future]
-                try:
-                    chunk_recommendations = future.result()
-                    logger.info(f"Chunk {chunk_index} processed with {len(chunk_recommendations)} recommendations")
-                    
-                    with recommendations_lock:
-                        all_recommendations.extend(chunk_recommendations)
-                        
-                except Exception as e:
-                    logger.error(f"Error processing chunk {chunk_index}: {str(e)}")
-        
-        end_time = datetime.now()
-        duration = (end_time - start_time).total_seconds()
-        logger.info(f"Test analysis complete in {duration:.2f} seconds. Found {len(all_recommendations)} recommendations")
-        
-        return {
-            "recommendations": all_recommendations,
-            "duration_seconds": duration
-        }
-        
-    except Exception as e:
-        logger.error(f"Test analysis failed: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Test analysis failed: {str(e)}")
