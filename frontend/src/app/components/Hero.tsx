@@ -4,12 +4,9 @@ export const Hero = () => {
       <div className="text-center space-y-8">
         <h2 className="text-5xl sm:text-6xl font-bold max-w-3xl mx-auto leading-tight">
           Ship with confidence, <br />
-          <span className="text-orange-600 dark:text-orange-500">
-            deploy without surprises
-          </span>
+          <span className="text-purple-400">deploy without surprises</span>
         </h2>
-        <p className="text-xl max-w-2xl mx-auto text-black/80 dark:text-white/80">
-          {" "}
+        <p className="text-xl max-w-2xl mx-auto text-purple-200">
           A free, instant AI-powered analysis of your repository to catch
           deployment issues before they catch you.
         </p>
@@ -21,15 +18,15 @@ export const Hero = () => {
               <input
                 type="text"
                 placeholder="https://github.com/richieb21/deployable"
-                className="w-full px-6 py-4 bg-white dark:bg-gray-900 border-2 border-black/10 dark:border-white/10 rounded-xl 
-                             focus:outline-none focus:border-orange-500 dark:focus:border-orange-500 
-                             placeholder:text-gray-400 dark:placeholder:text-gray-600
-                             text-black dark:text-white"
+                className="w-full px-6 py-4 bg-gray-900/50 border-2 border-gray-700 rounded-xl 
+                         focus:outline-none focus:border-gray-500
+                         placeholder:text-gray-500
+                         text-purple-200"
               />
             </div>
             <button
-              className="px-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-xl font-semibold 
-                                    hover:bg-gray-800 dark:hover:bg-gray-100 transition whitespace-nowrap"
+              className="px-8 py-4 bg-gray-900 text-gray-400 rounded-xl font-semibold 
+                        hover:bg-gray-800 hover:text-gray-300 transition whitespace-nowrap"
             >
               Deploy!
             </button>
