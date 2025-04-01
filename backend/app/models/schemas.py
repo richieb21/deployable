@@ -32,10 +32,6 @@ class Recommendation(BaseModel):
     category: RecommendationCategory
     action_items: List[str]
 
-class Insights(BaseModel):
-    recommendations: List[Recommendation] = Field(default_factory=list, description="Recommendations")
-
-
 class AnalysisRequest(BaseModel):
     repo_url: HttpUrl = Field(..., description="GitHub repository URL to analyze")
     # target_platforms: Optional[List[str]] = Field(
