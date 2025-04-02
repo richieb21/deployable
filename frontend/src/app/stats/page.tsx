@@ -74,13 +74,13 @@ export default function StatsPage() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed top-16 left-0 right-0 z-20 bg-[#121212]/90 backdrop-blur-md py-2 px-4 border-b border-gray-800"
+            className="fixed top-16 left-0 right-0 z-20 bg-[#121212]/80 backdrop-blur-md py-2 px-4 border-b border-gray-800/50"
           >
             <div className="max-w-5xl mx-auto flex items-center gap-4">
-              <div className="text-sm font-medium text-white">
-                Overall Score: {overallScore}
+              <div className="text-xl font-semibold text-white min-w-[40px] text-center">
+                {overallScore}
               </div>
-              <div className="flex-1 bg-gray-800 rounded-full h-2.5">
+              <div className="flex-1 bg-gray-800/50 rounded-full h-2.5">
                 <div
                   className="h-2.5 rounded-full transition-all duration-500 ease-out"
                   style={{
