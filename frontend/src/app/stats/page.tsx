@@ -5,16 +5,16 @@ import { IssuesList } from "../components/IssuesList";
 import { useSearchParams } from "next/navigation";
 import { StatsLayout } from "../components/StatsLayout";
 import { useAnalysis } from "../hooks/useAnalysis";
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
 
 export default function StatsPage() {
   const searchParams = useSearchParams();
   const repoUrl = searchParams.get("repo") || "github.com/richieb21/deployable";
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [completedIssues, setCompletedIssues] = useState<{
     [key: string]: boolean;
   }>({});
+  const prevCompletedCountRef = useRef(0);
+  const changedIssueIdRef = useRef<string | null>(null);
 
   // Extract just the repo name from the URL
   const repoName = repoUrl.split("/").slice(-2).join("/");
@@ -22,17 +22,14 @@ export default function StatsPage() {
   // Fetch analysis data with caching
   const { data, loading, error, refreshAnalysis } = useAnalysis(repoUrl);
 
-  // Set analyzing state based on loading
-  useEffect(() => {
-    setIsAnalyzing(loading);
-  }, [loading]);
-
   // Load completed issues from localStorage on mount
   useEffect(() => {
     try {
       const storedCompletedIssues = localStorage.getItem("completedIssues");
       if (storedCompletedIssues) {
-        setCompletedIssues(JSON.parse(storedCompletedIssues));
+        const parsed = JSON.parse(storedCompletedIssues);
+        setCompletedIssues(parsed);
+        prevCompletedCountRef.current = Object.keys(parsed).length;
       }
     } catch (error) {
       console.error("Error loading completed issues:", error);
@@ -40,30 +37,23 @@ export default function StatsPage() {
   }, []);
 
   // Handle issue status changes
-  const handleIssueStatusChange = (updatedCompletedIssues: {
-    [key: string]: boolean;
-  }) => {
+  const handleIssueStatusChange = (
+    updatedCompletedIssues: { [key: string]: boolean },
+    changedIssueId: string
+  ) => {
+    // Track which issue was changed
+    changedIssueIdRef.current = changedIssueId;
     setCompletedIssues(updatedCompletedIssues);
   };
 
-  // Add a key to the StatsDisplay component that changes when completedIssues changes
-  // This will force a re-render with fresh animations
-  const completedIssuesKey = Object.keys(completedIssues).length;
-
   return (
     <StatsLayout repoName={repoName}>
-      <motion.div
-        key={`stats-${completedIssuesKey}`}
-        initial={{ opacity: 0.8, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <StatsDisplay
-          analysisData={data}
-          loading={loading}
-          completedIssues={completedIssues}
-        />
-      </motion.div>
+      <StatsDisplay
+        analysisData={data}
+        loading={loading}
+        completedIssues={completedIssues}
+        changedIssueId={changedIssueIdRef.current}
+      />
 
       <div className="mt-16">
         <div className="flex justify-between items-center mb-6 max-w-5xl mx-auto px-2">

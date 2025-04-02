@@ -14,9 +14,11 @@ type StatMetric = {
 const CircleGraph = ({
   metric,
   size = "normal",
+  shouldAnimate = false,
 }: {
   metric: StatMetric;
   size?: "normal" | "large";
+  shouldAnimate?: boolean;
 }) => {
   const [mounted, setMounted] = useState(false);
   const [displayValue, setDisplayValue] = useState(0);
@@ -155,15 +157,17 @@ const getScoreColor = (score: number): { main: string; gradient: string } => {
   };
 };
 
-// Update the component props to include completedIssues
+// Update the component props to include changedIssueId
 export const StatsDisplay = ({
   analysisData,
   loading = false,
   completedIssues = {},
+  changedIssueId = null,
 }: {
   analysisData?: AnalysisResponse | null;
   loading?: boolean;
   completedIssues?: { [key: string]: boolean };
+  changedIssueId?: string | null;
 }) => {
   // If loading, show a loading state instead of the graphs
   if (loading) {
@@ -304,7 +308,11 @@ export const StatsDisplay = ({
       <div className="bg-[#1A1817] rounded-xl p-8 shadow-lg">
         <div className="flex flex-col md:flex-row items-start justify-between gap-8">
           <div className="flex flex-col items-center">
-            <CircleGraph metric={mainMetric} size="large" />
+            <CircleGraph 
+              metric={mainMetric} 
+              size="large" 
+              shouldAnimate={changedIssueId !== null}
+            />
             <div className="mt-2 text-xl font-semibold text-gray-400">
               Overall Score
             </div>
@@ -331,7 +339,12 @@ export const StatsDisplay = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mx-auto">
           {metrics.map((metric, index) => (
             <div key={`${metric.name}-${index}`} className="flex flex-col items-center">
-              <CircleGraph metric={metric} />
+              <CircleGraph 
+                metric={metric} 
+                shouldAnimate={changedIssueId !== null && 
+                  (changedIssueId.includes(metric.name.toUpperCase()) || 
+                   metric.name.toUpperCase() === "OVERALL")}
+              />
             </div>
           ))}
         </div>
