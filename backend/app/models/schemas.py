@@ -24,6 +24,11 @@ class TechStack(BaseModel):
     backend: List[str] = Field(default_factory=list, description="Backend technologies")
     infra: List[str] = Field(default_factory=list, description="Project Infrastructure")
 
+class KeyFiles(BaseModel):
+    frontend: List[str] = Field(default_factory=list, description="Frontend configuration and source files")
+    backend: List[str] = Field(default_factory=list, description="Backend configuration and source files")
+    infra: List[str] = Field(default_factory=list, description="Infrastructure and deployment files")
+
 class Recommendation(BaseModel):
     title: str
     description: str
@@ -48,3 +53,13 @@ class AnalysisResponse(BaseModel):
     # summary: str
     # detected_technologies: Dict[str, List[str]]
     analysis_timestamp: str 
+
+class IdentifyKeyFilesRequest(BaseModel):
+    repo_url: str
+
+class IdentifyKeyFilesResponse(BaseModel):
+    all_files: List[str]
+    key_files: KeyFiles = Field(
+        default_factory=KeyFiles,
+        description="Categorized key files for analysis"
+    )

@@ -113,6 +113,7 @@ class DeepseekService:
         
         Focus only on:
         - Security files (auth, env)
+        - Files that may have important business logic
         - Infrastructure (Docker, CI/CD)
         - Config files
         - Main app entry points

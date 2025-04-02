@@ -7,7 +7,7 @@ from datetime import datetime
 import threading
 import time
 
-from app.models.schemas import AnalysisRequest, AnalysisResponse, Recommendation
+from app.models.schemas import AnalysisRequest, AnalysisResponse, Recommendation, IdentifyKeyFilesRequest, IdentifyKeyFilesResponse
 from app.services.github import GithubService
 from app.services.deepseek_service import DeepseekService
 
@@ -20,6 +20,7 @@ router = APIRouter(
 )
 
 github_service = GithubService()
+deepseek_service = DeepseekService()
 recommendations_lock = threading.Lock()
 
 def analyze_file_batch(files_batch: List[Dict[str, str]], client_pool, batch_index: int) -> List[Dict[str, Any]]:
@@ -202,14 +203,14 @@ async def analyze_repository(request: AnalysisRequest):
         fetch_duration = time.time() - fetch_start
         logger.info(f"Fetched content for {len(file_contents)} files in {fetch_duration:.2f} seconds")
         
-        file_chunks = chunk_files(file_contents, chunk_size=5)  # Increased chunk size
+        file_chunks = chunk_files(file_contents, chunk_size=5) 
         logger.info(f"Split files into {len(file_chunks)} chunks for processing")
         
         all_recommendations = []
         
         # Create a pool of DeepSeek clients
         api_key = request.api_key if hasattr(request, 'api_key') else None
-        max_workers = min(len(file_chunks), 10)  # Limit concurrency
+        max_workers = min(len(file_chunks), 10)  
         client_pool = DeepseekClientPool(size=max_workers, api_key=api_key)
         
         # Use a thread pool executor for parallel processing
@@ -229,7 +230,7 @@ async def analyze_repository(request: AnalysisRequest):
                     progress_pct = (completed / len(file_chunks)) * 100
                     logger.info(f"Chunk {chunk_index} processed with {len(chunk_recommendations)} recommendations ({completed}/{len(file_chunks)} complete, {progress_pct:.1f}%)")
                     
-                    # Safely append results using lock
+                    # Locking to avoid race conditions
                     with recommendations_lock:
                         all_recommendations.extend(chunk_recommendations)
                         
@@ -245,7 +246,6 @@ async def analyze_repository(request: AnalysisRequest):
         
         end_time = datetime.now()
         
-        # Step 5: Return the analysis results
         return AnalysisResponse(
             repository=repo_url,
             recommendations=all_recommendations,
@@ -257,3 +257,22 @@ async def analyze_repository(request: AnalysisRequest):
         logger.error(f"Analysis failed after {overall_duration:.2f} seconds: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
+@router.post("/key-files", response_model=IdentifyKeyFilesResponse)
+async def identify_key_files(request: IdentifyKeyFilesRequest):
+    """
+    Identify all files and key files within a Github Repository
+    """
+    repo_url = str(request.repo_url)
+    all_files = github_service.list_filenames(repo_url)
+
+    prompt = deepseek_service.identify_files_prompt(all_files)
+    key_files = json.loads(deepseek_service.call_model(prompt))
+
+    logger.info(type(key_files))
+    logger.info(type(all_files))
+    logger.info(key_files)
+
+    return IdentifyKeyFilesResponse(
+        all_files=all_files,
+        key_files=key_files
+    )
