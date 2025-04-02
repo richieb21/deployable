@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export const Hero = () => {
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -13,23 +15,8 @@ export const Hero = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/analysis", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ repo_url: url }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.error || `HTTP error! status: ${response.status}`
-        );
-      }
-
-      const data = await response.json();
-      console.log("Analysis response:", data); // Add handling later
+      // Navigate to analysis page with the repository URL
+      router.push(`/analysis?url=${encodeURIComponent(url)}`);
     } catch (error) {
       console.error("Error:", error);
       setError(error instanceof Error ? error.message : "An error occurred");
