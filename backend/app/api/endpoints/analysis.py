@@ -5,6 +5,7 @@ import json
 import concurrent.futures
 from datetime import datetime
 import threading
+import time
 
 from app.models.schemas import AnalysisRequest, AnalysisResponse, Recommendation
 from app.services.github import GithubService
@@ -21,33 +22,55 @@ router = APIRouter(
 github_service = GithubService()
 recommendations_lock = threading.Lock()
 
-def analyze_file_batch(files_batch: List[Dict[str, str]], api_key: Optional[str] = None) -> List[Dict[str, Any]]:
+def analyze_file_batch(files_batch: List[Dict[str, str]], client_pool, batch_index: int) -> List[Dict[str, Any]]:
     """
-    Analyze a batch of files using a dedicated DeepSeek client.
+    Analyze a batch of files using a client from the pool.
     
     Args:
         files_batch: List of file content dictionaries to analyze
-        api_key: Optional API key for DeepSeek
+        client_pool: Pool of DeepSeek clients
+        batch_index: Index of the current batch for logging
         
     Returns:
         List of recommendations
     """
+    batch_start_time = time.time()
+    total_content_size = sum(len(file.get('content', '')) for file in files_batch)
+    
     try:
-        # Create a dedicated DeepSeek client for this batch
-        deepseek_client = DeepseekService(api_key=api_key)
+        # Get a client from the pool
+        deepseek_client = client_pool.get_client()
         
-        logger.info(f"Analyzing batch of {len(files_batch)} files")
+        logger.info(f"Batch {batch_index}: Analyzing {len(files_batch)} files ({total_content_size/1024:.1f} KB)")
+        
+        prompt_start_time = time.time()
         analysis_prompt = deepseek_client.get_file_analysis_prompt(files_batch)
+        prompt_duration = time.time() - prompt_start_time
+        logger.info(f"Batch {batch_index}: Prompt generation took {prompt_duration:.2f} seconds")
+        
+        model_start_time = time.time()
         analysis_response = deepseek_client.call_model(analysis_prompt)
+        model_duration = time.time() - model_start_time
+        logger.info(f"Batch {batch_index}: Model API call took {model_duration:.2f} seconds")
         
         try:
+            parse_start_time = time.time()
             recommendations = json.loads(analysis_response)
-            logger.info(f"Batch analysis complete, found {len(recommendations)} recommendations")
+            parse_duration = time.time() - parse_start_time
+            logger.info(f"Batch {batch_index}: JSON parsing took {parse_duration:.2f} seconds")
+            
+            batch_duration = time.time() - batch_start_time
+            logger.info(f"Batch {batch_index}: Analysis complete, found {len(recommendations)} recommendations in {batch_duration:.2f} seconds")
+            
+            # Return the client to the pool
+            client_pool.return_client(deepseek_client)
             return recommendations
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON response: {str(e)}")
-            logger.error(f"Raw response snippet: {analysis_response[:200]}...")
+            logger.error(f"Batch {batch_index}: Failed to parse JSON response: {str(e)}")
+            logger.error(f"Batch {batch_index}: Raw response snippet: {analysis_response[:200]}...")
             
+            # Return the client to the pool
+            client_pool.return_client(deepseek_client)
             return [{
                 "title": "JSON Parsing Error",
                 "description": f"Failed to parse model response: {str(e)}. This is likely due to an invalid JSON format returned by the model.",
@@ -63,10 +86,10 @@ def analyze_file_batch(files_batch: List[Dict[str, str]], api_key: Optional[str]
             }]
         
     except Exception as e:
-        logger.error(f"Error in file batch analysis: {str(e)}")
+        logger.error(f"Batch {batch_index}: Error in file batch analysis: {str(e)}")
         return []  # Return empty list instead of failing the entire process
 
-def chunk_files(files: List[Dict[str, str]], chunk_size: int = 2) -> List[List[Dict[str, str]]]:
+def chunk_files(files: List[Dict[str, str]], chunk_size: int = 5) -> List[List[Dict[str, str]]]:
     """
     Split files into chunks for parallel processing.
     
@@ -77,26 +100,95 @@ def chunk_files(files: List[Dict[str, str]], chunk_size: int = 2) -> List[List[D
     Returns:
         List of file chunks
     """
-    return [files[i:i + chunk_size] for i in range(0, len(files), chunk_size)]
+    # Group similar files together for better analysis
+    grouped_files = {}
+    for file in files:
+        # Get file extension as a grouping key
+        ext = file.get('name', '').split('.')[-1] if '.' in file.get('name', '') else 'unknown'
+        if ext not in grouped_files:
+            grouped_files[ext] = []
+        grouped_files[ext].append(file)
+    
+    # Create chunks with similar files when possible
+    chunks = []
+    remaining_files = []
+    
+    # First create complete chunks of similar files
+    for ext, file_group in grouped_files.items():
+        for i in range(0, len(file_group), chunk_size):
+            chunk = file_group[i:i + chunk_size]
+            if len(chunk) == chunk_size:
+                chunks.append(chunk)
+            else:
+                remaining_files.extend(chunk)
+    
+    # Then handle any remaining files
+    for i in range(0, len(remaining_files), chunk_size):
+        chunks.append(remaining_files[i:i + chunk_size])
+    
+    logger.info(f"Created {len(chunks)} chunks with up to {chunk_size} files per chunk")
+    return chunks
+
+class DeepseekClientPool:
+    """Client pool to reuse DeepSeek connections"""
+    def __init__(self, size=5, api_key=None):
+        self.clients = []
+        self.size = size
+        self.api_key = api_key
+        self.lock = threading.Lock()
+        self._initialize_clients()
+    
+    def _initialize_clients(self):
+        for _ in range(self.size):
+            self.clients.append(DeepseekService(api_key=self.api_key))
+        logger.info(f"Initialized pool of {self.size} DeepSeek clients")
+    
+    def get_client(self):
+        with self.lock:
+            if not self.clients:
+                # If pool is empty, create a new client
+                return DeepseekService(api_key=self.api_key)
+            return self.clients.pop()
+    
+    def return_client(self, client):
+        with self.lock:
+            self.clients.append(client)
 
 @router.post("/", response_model=AnalysisResponse)
 async def analyze_repository(request: AnalysisRequest):
     """
     Analyze a GitHub repository for deployment readiness using multiple parallel DeepSeek clients.
     """
+    overall_start_time = time.time()
+    logger.info(f"Starting analysis for repository: {request.repo_url}")
+    
     try:
         repo_url = str(request.repo_url)
 
+        list_files_start = time.time()
         all_files = github_service.list_filenames(repo_url)
+        list_files_duration = time.time() - list_files_start
+        logger.info(f"Listed {len(all_files)} files in {list_files_duration:.2f} seconds")
         
         # identify important files to analyze
         deepseek_service = DeepseekService() 
+        
+        identify_start = time.time()
         files_prompt = deepseek_service.identify_files_prompt(all_files)
+        
+        model_start = time.time()
         files_response = deepseek_service.call_model(files_prompt)
+        model_duration = time.time() - model_start
+        logger.info(f"Files identification model call took {model_duration:.2f} seconds")
         
         try:
             important_files = json.loads(files_response)
-            logger.info(f"Identified important files: {important_files}")
+            identify_duration = time.time() - identify_start
+            logger.info(f"Identified important files in {identify_duration:.2f} seconds")
+            
+            # Count files by category
+            file_counts = {category: len(files) for category, files in important_files.items()}
+            logger.info(f"File counts by category: {file_counts}")
         except json.JSONDecodeError:
             logger.error(f"Failed to parse important files response: {files_response}")
             important_files = {"frontend": [], "backend": [], "infra": []}
@@ -105,25 +197,37 @@ async def analyze_repository(request: AnalysisRequest):
         for _, file_list in important_files.items():
             files_to_analyze.extend(file_list)
         
+        fetch_start = time.time()
         file_contents = github_service.get_file_content_batch(repo_url, files_to_analyze)
+        fetch_duration = time.time() - fetch_start
+        logger.info(f"Fetched content for {len(file_contents)} files in {fetch_duration:.2f} seconds")
         
-        file_chunks = chunk_files(file_contents)
-        logger.info(f"Split files into {len(file_chunks)} chunks")
+        file_chunks = chunk_files(file_contents, chunk_size=5)  # Increased chunk size
+        logger.info(f"Split files into {len(file_chunks)} chunks for processing")
         
         all_recommendations = []
         
+        # Create a pool of DeepSeek clients
+        api_key = request.api_key if hasattr(request, 'api_key') else None
+        max_workers = min(len(file_chunks), 10)  # Limit concurrency
+        client_pool = DeepseekClientPool(size=max_workers, api_key=api_key)
+        
         # Use a thread pool executor for parallel processing
-        with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(file_chunks), 8)) as executor:
+        analysis_start = time.time()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_chunk = {
-                executor.submit(analyze_file_batch, chunk, request.api_key if hasattr(request, 'api_key') else None): i 
+                executor.submit(analyze_file_batch, chunk, client_pool, i): i 
                 for i, chunk in enumerate(file_chunks)
             }
             
+            completed = 0
             for future in concurrent.futures.as_completed(future_to_chunk):
                 chunk_index = future_to_chunk[future]
                 try:
                     chunk_recommendations = future.result()
-                    logger.info(f"Chunk {chunk_index} processed with {len(chunk_recommendations)} recommendations")
+                    completed += 1
+                    progress_pct = (completed / len(file_chunks)) * 100
+                    logger.info(f"Chunk {chunk_index} processed with {len(chunk_recommendations)} recommendations ({completed}/{len(file_chunks)} complete, {progress_pct:.1f}%)")
                     
                     # Safely append results using lock
                     with recommendations_lock:
@@ -132,15 +236,13 @@ async def analyze_repository(request: AnalysisRequest):
                 except Exception as e:
                     logger.error(f"Error processing chunk {chunk_index}: {str(e)}")
         
-        # Convert to Recommendation objects for validation
-        # validated_recommendations = []
-        # for rec in all_recommendations:
-        #     try:
-        #         validated_recommendations.append(Recommendation(**rec))
-        #     except Exception as e:
-        #         logger.error(f"Invalid recommendation format: {str(e)}")
+        analysis_duration = time.time() - analysis_start
+        logger.info(f"All chunks processed in {analysis_duration:.2f} seconds")
         
         logger.info(f"Analysis complete. Found {len(all_recommendations)} recommendations")
+        overall_duration = time.time() - overall_start_time
+        logger.info(f"Total analysis completed in {overall_duration:.2f} seconds")
+        
         end_time = datetime.now()
         
         # Step 5: Return the analysis results
@@ -151,6 +253,7 @@ async def analyze_repository(request: AnalysisRequest):
         )
         
     except Exception as e:
-        logger.error(f"Analysis failed: {str(e)}", exc_info=True)
+        overall_duration = time.time() - overall_start_time
+        logger.error(f"Analysis failed after {overall_duration:.2f} seconds: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
