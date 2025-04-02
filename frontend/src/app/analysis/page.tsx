@@ -49,57 +49,176 @@ export default function AnalysisPage() {
     },
   ]);
 
-  useEffect(() => {
-    const fetchFiles = async () => {
-      try {
-        // Set first step to in_progress immediately when starting
-        setSteps((prev) =>
-          prev.map((step, index) =>
-            index === 0 ? { ...step, status: "in_progress" } : step
-          )
-        );
-        console.log("called");
-
-        const response = await fetch("/api/analysis/key-files", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ repo_url: repoUrl }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch repository files");
-        }
-
-        const data: IdentifyKeyFilesResponse = await response.json();
-        console.log(data);
-        setAllFiles(data.all_files);
-        setKeyFiles(data.key_files);
-        setSteps((prev) =>
-          prev.map((step, index) =>
-            index === 0
-              ? { ...step, status: "completed" }
-              : index === 1
-              ? { ...step, status: "in_progress" }
-              : step
-          )
-        );
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
-      }
-    };
-
-    if (repoUrl) {
-      // Set initial step status and start fetch
+  // Add function to start repository analysis
+  const startRepositoryAnalysis = async () => {
+    try {
       setSteps((prev) =>
         prev.map((step, index) =>
           index === 0 ? { ...step, status: "in_progress" } : step
         )
       );
-      fetchFiles();
+
+      const response = await fetch("/api/analysis/key-files", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ repo_url: repoUrl }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch repository files");
+      }
+
+      const data: IdentifyKeyFilesResponse = await response.json();
+      setAllFiles(data.all_files);
+      setKeyFiles(data.key_files);
+      setSteps((prev) =>
+        prev.map((step, index) =>
+          index === 0 ? { ...step, status: "completed" } : step
+        )
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    }
+  };
+
+  // Remove the automatic start from useEffect
+  useEffect(() => {
+    // Only initialize the steps, don't start analysis
+    if (repoUrl) {
+      setSteps((prev) =>
+        prev.map((step, index) =>
+          index === 0 ? { ...step, status: "pending" } : step
+        )
+      );
     }
   }, [repoUrl]);
+
+  const renderStep = (step: AnalysisStep, index: number) => {
+    // For first step, show button if pending
+    const canStart =
+      (index === 0 && step.status === "pending") ||
+      // For other steps, show button if previous step is completed and this step is pending
+      (index > 0 &&
+        steps[index - 1].status === "completed" &&
+        step.status === "pending");
+
+    return (
+      <div
+        key={index}
+        className={`flex items-start space-x-4 p-4 rounded-lg border-2 ${
+          step.status === "completed"
+            ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+            : step.status === "in_progress"
+            ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
+            : "border-gray-200 dark:border-gray-700"
+        }`}
+      >
+        <div
+          className={`w-8 h-8 rounded-full flex items-center justify-center ${
+            step.status === "completed"
+              ? "bg-green-500"
+              : step.status === "in_progress"
+              ? "bg-orange-500"
+              : "bg-gray-200 dark:bg-gray-700"
+          }`}
+        >
+          {step.status === "completed" ? (
+            <svg
+              className="w-5 h-5 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          ) : step.status === "in_progress" ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+          ) : (
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              {index + 1}
+            </span>
+          )}
+        </div>
+        <div className="flex-1">
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="font-semibold text-black dark:text-white">
+                {step.title}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {step.description}
+              </p>
+            </div>
+            {canStart && (
+              <button
+                onClick={() => {
+                  if (index === 0) {
+                    startRepositoryAnalysis();
+                  } else {
+                    // Handle other steps' start logic
+                    setSteps((prev) =>
+                      prev.map((s, i) =>
+                        i === index ? { ...s, status: "in_progress" } : s
+                      )
+                    );
+                  }
+                }}
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm"
+              >
+                Start
+              </button>
+            )}
+          </div>
+
+          {/* Repository Analysis Content */}
+          {index === 0 && step.status === "completed" && (
+            <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* File Tree */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                <h2 className="text-sm font-semibold text-black dark:text-white mb-3">
+                  Repository Structure
+                </h2>
+                <div className="max-h-[300px] overflow-y-auto">
+                  <FileTree files={allFiles} />
+                </div>
+              </div>
+
+              {/* Key Files */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                <h2 className="text-sm font-semibold text-black dark:text-white mb-3">
+                  Key Files Identified
+                </h2>
+                <div className="space-y-4 max-h-[300px] overflow-y-auto">
+                  <KeyFileCategory
+                    category="frontend"
+                    title="Frontend Files"
+                    files={keyFiles.frontend}
+                  />
+                  <KeyFileCategory
+                    category="backend"
+                    title="Backend Files"
+                    files={keyFiles.backend}
+                  />
+                  <KeyFileCategory
+                    category="infra"
+                    title="Infrastructure Files"
+                    files={keyFiles.infra}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   if (error) {
     return (
@@ -131,147 +250,7 @@ export default function AnalysisPage() {
         {/* Progress Steps with Repository Analysis */}
         <div className="mb-12">
           <div className="space-y-4">
-            {/* Repository Analysis Step */}
-            <div
-              className={`flex items-start space-x-4 p-4 rounded-lg border-2 ${
-                steps[0].status === "completed"
-                  ? "border-green-500 bg-green-50 dark:bg-green-900/20"
-                  : steps[0].status === "in_progress"
-                  ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
-                  : "border-gray-200 dark:border-gray-700"
-              }`}
-            >
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  steps[0].status === "completed"
-                    ? "bg-green-500"
-                    : steps[0].status === "in_progress"
-                    ? "bg-orange-500"
-                    : "bg-gray-200 dark:bg-gray-700"
-                }`}
-              >
-                {steps[0].status === "completed" ? (
-                  <svg
-                    className="w-5 h-5 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                ) : steps[0].status === "in_progress" ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                ) : (
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                    1
-                  </span>
-                )}
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-black dark:text-white">
-                  {steps[0].title}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  {steps[0].description}
-                </p>
-
-                {/* Repository Analysis Content */}
-                {steps[0].status === "completed" && (
-                  <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {/* File Tree */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                      <h2 className="text-sm font-semibold text-black dark:text-white mb-3">
-                        Repository Structure
-                      </h2>
-                      <div className="max-h-[300px] overflow-y-auto">
-                        <FileTree files={allFiles} />
-                      </div>
-                    </div>
-
-                    {/* Key Files */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                      <h2 className="text-sm font-semibold text-black dark:text-white mb-3">
-                        Key Files Identified
-                      </h2>
-                      <div className="space-y-4 max-h-[300px] overflow-y-auto">
-                        <KeyFileCategory
-                          category="frontend"
-                          title="Frontend Files"
-                          files={keyFiles.frontend}
-                        />
-                        <KeyFileCategory
-                          category="backend"
-                          title="Backend Files"
-                          files={keyFiles.backend}
-                        />
-                        <KeyFileCategory
-                          category="infra"
-                          title="Infrastructure Files"
-                          files={keyFiles.infra}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Remaining Steps */}
-            {steps.slice(1).map((step, index) => (
-              <div
-                key={index + 1}
-                className={`flex items-start space-x-4 p-4 rounded-lg border-2 ${
-                  step.status === "completed"
-                    ? "border-green-500 bg-green-50 dark:bg-green-900/20"
-                    : step.status === "in_progress"
-                    ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
-                    : "border-gray-200 dark:border-gray-700"
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    step.status === "completed"
-                      ? "bg-green-500"
-                      : step.status === "in_progress"
-                      ? "bg-orange-500"
-                      : "bg-gray-200 dark:bg-gray-700"
-                  }`}
-                >
-                  {step.status === "completed" ? (
-                    <svg
-                      className="w-5 h-5 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  ) : (
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                      {index + 2}
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-black dark:text-white">
-                    {step.title}
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {step.description}
-                  </p>
-                </div>
-              </div>
-            ))}
+            {steps.map((step, index) => renderStep(step, index))}
           </div>
         </div>
 
