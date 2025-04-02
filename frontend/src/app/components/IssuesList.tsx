@@ -50,6 +50,8 @@ export const IssuesList = ({
     completedIssues: CompletedIssues,
     changedIssueId: string
   ) => void;
+  selectedIssues: Set<string>;
+  onSelectionChange: (selected: Set<string>) => void;
 }) => {
   const [expandedIssue, setExpandedIssue] = useState<number | null>(null);
   const [completedIssues, setCompletedIssues] = useState<CompletedIssues>({});
@@ -133,16 +135,16 @@ export const IssuesList = ({
   const handleToggleExpand = (index: number) => {
     // Store current scroll position
     scrollPositionRef.current = window.scrollY;
-    
+
     // Set flag to indicate we're in the middle of expanding/collapsing
     expandingRef.current = true;
-    
+
     setExpandedIssue(expandedIssue === index ? null : index);
-    
+
     // Reset the expanding flag after animation completes
     setTimeout(() => {
       expandingRef.current = false;
-      
+
       // Restore scroll position
       if (scrollPositionRef.current) {
         window.scrollTo({
@@ -195,7 +197,9 @@ export const IssuesList = ({
         {sortedRecommendations.map((issue, index) => {
           const issueId = `${issue.title}-${issue.file_path}`;
           const isCompleted = completedIssues[issueId] || false;
-          const severityColor = getSeverityColor(issue.severity as IssueSeverity);
+          const severityColor = getSeverityColor(
+            issue.severity as IssueSeverity
+          );
 
           return (
             <div key={issueId} className="rounded-xl shadow-md overflow-hidden">
@@ -218,7 +222,7 @@ export const IssuesList = ({
                 ></div>
 
                 <div className="p-8 pl-10">
-                  <div 
+                  <div
                     className="flex justify-between cursor-pointer"
                     onClick={() => handleToggleExpand(index)}
                   >
@@ -226,9 +230,7 @@ export const IssuesList = ({
                       <h3 className="text-lg font-semibold text-white mb-2">
                         {issue.title}
                       </h3>
-                      <p className="text-sm text-gray-400">
-                        {issue.file_path}
-                      </p>
+                      <p className="text-sm text-gray-400">{issue.file_path}</p>
                     </div>
                     <div className="flex flex-col items-end space-y-4 ml-6">
                       <div className="flex items-center space-x-4">
@@ -251,42 +253,60 @@ export const IssuesList = ({
                           ></path>
                         </svg>
                       </div>
-                      <button
-                        onClick={(e) => toggleIssueCompletion(issueId, e)}
-                        className={`flex items-center px-4 py-2 rounded-md transition-colors duration-200 ${
-                          isCompleted
-                            ? "bg-green-600/20 text-green-400 hover:bg-green-600/30"
-                            : "bg-[#2A2D31] text-gray-300 hover:bg-[#353A40]"
-                        }`}
-                      >
-                        <svg
-                          className={`w-4 h-4 mr-2 ${
-                            isCompleted ? "text-green-400" : "text-gray-400"
+                      <div className="flex items-center space-x-2">
+                        <button className="flex items-center px-4 py-2 rounded-md transition-colors duration-200 bg-[#2A2D31] text-gray-300 hover:bg-[#353A40]">
+                          <svg
+                            className="w-4 h-4 mr-2 text-gray-400"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M12 3c.53 0 1.04.21 1.41.59.38.37.59.88.59 1.41 0 .53-.21 1.04-.59 1.41-.37.38-.88.59-1.41.59-.53 0-1.04-.21-1.41-.59C10.21 6.04 10 5.53 10 5c0-.53.21-1.04.59-1.41C10.96 3.21 11.47 3 12 3zM12 15c.53 0 1.04.21 1.41.59.38.37.59.88.59 1.41 0 .53-.21 1.04-.59 1.41-.37.38-.88.59-1.41.59-.53 0-1.04-.21-1.41-.59-.38-.37-.59-.88-.59-1.41 0-.53.21-1.04.59-1.41.37-.38.88-.59 1.41-.59zM12 9c.53 0 1.04.21 1.41.59.38.37.59.88.59 1.41 0 .53-.21 1.04-.59 1.41-.37.38-.88.59-1.41.59-.53 0-1.04-.21-1.41-.59C10.21 11.04 10 10.53 10 10c0-.53.21-1.04.59-1.41C10.96 9.21 11.47 9 12 9z"
+                            />
+                          </svg>
+                          <span className="text-sm">Create Issue</span>
+                        </button>
+                        <button
+                          onClick={(e) => toggleIssueCompletion(issueId, e)}
+                          className={`flex items-center px-4 py-2 rounded-md transition-colors duration-200 ${
+                            isCompleted
+                              ? "bg-green-600/20 text-green-400 hover:bg-green-600/30"
+                              : "bg-[#2A2D31] text-gray-300 hover:bg-[#353A40]"
                           }`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
                         >
-                          {isCompleted ? (
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M5 13l4 4L19 7"
-                            />
-                          ) : (
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                            />
-                          )}
-                        </svg>
-                        <span className="text-sm">
-                          {isCompleted ? "Completed" : "Mark Complete"}
-                        </span>
-                      </button>
+                          <svg
+                            className={`w-4 h-4 mr-2 ${
+                              isCompleted ? "text-green-400" : "text-gray-400"
+                            }`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            {isCompleted ? (
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M5 13l4 4L19 7"
+                              />
+                            ) : (
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                              />
+                            )}
+                          </svg>
+                          <span className="text-sm">
+                            {isCompleted ? "Completed" : "Complete"}
+                          </span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -309,23 +329,28 @@ export const IssuesList = ({
                     <div className="p-8 pl-10">
                       <div
                         className={`pl-8 border-l-2 ${
-                          isCompleted ? "border-green-800/30 opacity-80" : "border-gray-700"
+                          isCompleted
+                            ? "border-green-800/30 opacity-80"
+                            : "border-gray-700"
                         }`}
                       >
-                        <p className="text-gray-300 mb-6">{issue.description}</p>
+                        <p className="text-gray-300 mb-6">
+                          {issue.description}
+                        </p>
 
-                        {issue.action_items && issue.action_items.length > 0 && (
-                          <div className="mb-6">
-                            <h4 className="text-sm font-medium text-white mb-3">
-                              Action Items:
-                            </h4>
-                            <ul className="list-disc pl-5 text-sm text-gray-300 space-y-2">
-                              {issue.action_items.map((item, i) => (
-                                <li key={i}>{item}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
+                        {issue.action_items &&
+                          issue.action_items.length > 0 && (
+                            <div className="mb-6">
+                              <h4 className="text-sm font-medium text-white mb-3">
+                                Action Items:
+                              </h4>
+                              <ul className="list-disc pl-5 text-sm text-gray-300 space-y-2">
+                                {issue.action_items.map((item, i) => (
+                                  <li key={i}>{item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
 
                         {issue.code_snippets &&
                           (issue.code_snippets.before ||
@@ -391,18 +416,4 @@ export const IssuesList = ({
       </AnimatePresence>
     </div>
   );
-};
-
-// Add this helper function to get color values instead of class names
-const getSeverityColorValue = (severity: IssueSeverity): string => {
-  switch (severity) {
-    case "HIGH":
-      return "#EF4444"; // red-500
-    case "MEDIUM":
-      return "#F59E0B"; // yellow-500
-    case "LOW":
-      return "#3B82F6"; // blue-500
-    default:
-      return "#6B7280"; // gray-500
-  }
 };
