@@ -9,7 +9,7 @@ import time
 
 from app.models.schemas import AnalysisRequest, AnalysisResponse, Recommendation, IdentifyKeyFilesRequest, IdentifyKeyFilesResponse
 from app.services.github import GithubService
-from app.services.deepseek_service import DeepseekService
+from app.services.LLM_service import DeepseekService, OpenAIService
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,8 @@ router = APIRouter(
 
 github_service = GithubService()
 deepseek_service = DeepseekService()
+openai_service = OpenAIService()
+
 recommendations_lock = threading.Lock()
 
 def analyze_file_batch(files_batch: List[Dict[str, str]], client_pool, batch_index: int) -> List[Dict[str, Any]]:
@@ -265,8 +267,8 @@ async def identify_key_files(request: IdentifyKeyFilesRequest):
     repo_url = str(request.repo_url)
     all_files = github_service.list_filenames(repo_url)
 
-    prompt = deepseek_service.identify_files_prompt(all_files)
-    key_files = json.loads(deepseek_service.call_model(prompt))
+    prompt = openai_service.identify_files_prompt(all_files)
+    key_files = json.loads(openai_service.call_model(prompt))
 
     logger.info(type(key_files))
     logger.info(type(all_files))
