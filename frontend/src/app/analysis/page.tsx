@@ -14,7 +14,6 @@ interface AnalysisStep {
 export default function AnalysisPage() {
   const searchParams = useSearchParams();
   const repoUrl = searchParams.get("url") || "";
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [allFiles, setAllFiles] = useState<string[]>([]);
   const [keyFiles, setKeyFiles] = useState<
@@ -57,6 +56,14 @@ export default function AnalysisPage() {
   useEffect(() => {
     const fetchFiles = async () => {
       try {
+        // Set first step to in_progress immediately when starting
+        setSteps((prev) =>
+          prev.map((step, index) =>
+            index === 0 ? { ...step, status: "in_progress" } : step
+          )
+        );
+        console.log("called");
+
         const response = await fetch("/api/analysis/key-files", {
           method: "POST",
           headers: {
@@ -70,6 +77,7 @@ export default function AnalysisPage() {
         }
 
         const data: IdentifyKeyFilesResponse = await response.json();
+        console.log(data);
         setAllFiles(data.all_files);
         setKeyFiles(data.key_files);
         setSteps((prev) =>
@@ -83,12 +91,16 @@ export default function AnalysisPage() {
         );
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
-      } finally {
-        setIsLoading(false);
       }
     };
 
     if (repoUrl) {
+      // Set initial step status and start fetch
+      setSteps((prev) =>
+        prev.map((step, index) =>
+          index === 0 ? { ...step, status: "in_progress" } : step
+        )
+      );
       fetchFiles();
     }
   }, [repoUrl]);
@@ -135,19 +147,6 @@ export default function AnalysisPage() {
       </div>
     );
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#FFFAF5] dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">
-            Analyzing repository...
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -212,6 +211,8 @@ export default function AnalysisPage() {
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
+                ) : steps[0].status === "in_progress" ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                 ) : (
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
                     1
@@ -321,7 +322,7 @@ export default function AnalysisPage() {
             className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
             onClick={() => setCurrentStep(currentStep + 1)}
           >
-            Continue Analysis
+            LGTM! 👍
           </button>
         </div>
       </div>
