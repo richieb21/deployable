@@ -15,7 +15,7 @@ export const Header = ({ variant = "dark" }: HeaderProps) => {
       <div className="px-6 py-4 flex justify-between items-center">
         <Link href="/" className="flex items-center gap-2">
           <Image
-            src="/deployable.png"
+            src="/logo_light.png"
             alt="deployable"
             width={32}
             height={32}
