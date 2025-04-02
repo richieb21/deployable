@@ -32,3 +32,16 @@ export interface AnalysisResponse {
   repository: string;
   recommendations?: Recommendation[];
 }
+
+export interface IdentifyKeyFilesRequest {
+  repo_url: string;
+}
+
+export interface IdentifyKeyFilesResponse {
+  all_files: string[];
+  key_files: {
+    frontend: string;
+    backend: string;
+    infra: string;
+  };
+}
