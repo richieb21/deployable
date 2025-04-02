@@ -143,7 +143,7 @@ export const FileTree = ({ files, className = "" }: FileTreeProps) => {
     const isExpanded = expandedFolders.has(path);
 
     return (
-      <div key={path} style={{ marginLeft: `${level * 16}px` }}>
+      <div key={path} style={{ marginLeft: `${level * 8}px` }}>
         <div
           className="flex items-center space-x-1 py-1 px-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer group"
           onClick={() => type === "directory" && toggleFolder(path)}
@@ -154,7 +154,7 @@ export const FileTree = ({ files, className = "" }: FileTreeProps) => {
           </span>
         </div>
         {type === "directory" && isExpanded && node.children && (
-          <div className="ml-4">
+          <div>
             {node.children.map((child) => renderNode(child, level + 1))}
           </div>
         )}

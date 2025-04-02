@@ -1,13 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-
-interface File {
-  name: string;
-  path: string;
-  type: "file" | "directory";
-}
+import { IdentifyKeyFilesResponse } from "../types/api";
+import { FileTree } from "../components/FileTree";
 
 interface AnalysisStep {
   title: string;
@@ -18,29 +14,29 @@ interface AnalysisStep {
 export default function AnalysisPage() {
   const searchParams = useSearchParams();
   const repoUrl = searchParams.get("url") || "";
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [allFiles, setAllFiles] = useState<string[]>([]);
+  const [keyFiles, setKeyFiles] = useState<
+    IdentifyKeyFilesResponse["key_files"]
+  >({
+    frontend: [],
+    backend: [],
+    infra: [],
+  });
 
-  // Sample data for demonstration
-  const [files, setFiles] = useState<File[]>([
-    { name: "package.json", path: "/package.json", type: "file" },
-    { name: "src", path: "/src", type: "directory" },
-    { name: "README.md", path: "/README.md", type: "file" },
-    { name: "Dockerfile", path: "/Dockerfile", type: "file" },
-  ]);
-
-  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [currentStep, setCurrentStep] = useState(0);
-
-  const steps: AnalysisStep[] = [
+  const [steps, setSteps] = useState<AnalysisStep[]>([
     {
       title: "Repository Analysis",
       description: "Scanning repository structure and identifying key files",
-      status: "completed",
+      status: "pending",
     },
-    {
-      title: "File Selection",
-      description: "Select additional files to analyze",
-      status: "in_progress",
-    },
+    // {
+    //   title: "File Selection",
+    //   description: "Select additional files to analyze",
+    //   status: "pending",
+    // },
     {
       title: "Security Check",
       description: "Analyzing security configurations and dependencies",
@@ -56,17 +52,118 @@ export default function AnalysisPage() {
       description: "Generating deployment recommendations",
       status: "pending",
     },
-  ];
+  ]);
 
-  const toggleFileSelection = (path: string) => {
-    const newSelection = new Set(selectedFiles);
-    if (newSelection.has(path)) {
-      newSelection.delete(path);
-    } else {
-      newSelection.add(path);
+  useEffect(() => {
+    const fetchFiles = async () => {
+      try {
+        const response = await fetch("/api/analysis/key-files", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ repo_url: repoUrl }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch repository files");
+        }
+
+        const data: IdentifyKeyFilesResponse = await response.json();
+        setAllFiles(data.all_files);
+        setKeyFiles(data.key_files);
+        setSteps((prev) =>
+          prev.map((step, index) =>
+            index === 0
+              ? { ...step, status: "completed" }
+              : index === 1
+              ? { ...step, status: "in_progress" }
+              : step
+          )
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (repoUrl) {
+      fetchFiles();
     }
-    setSelectedFiles(newSelection);
+  }, [repoUrl]);
+
+  const renderKeyFileCategory = (
+    category: keyof typeof keyFiles,
+    title: string
+  ) => {
+    const files = keyFiles[category];
+    return (
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+          {title}
+        </h3>
+        {Array.isArray(files) && files.length > 0 ? (
+          <div className="space-y-1">
+            {files.map((file) => (
+              <div
+                key={file}
+                className="flex items-center space-x-2 p-2 text-sm rounded-lg bg-orange-50 dark:bg-orange-900/20"
+              >
+                <svg
+                  className="w-4 h-4 text-orange-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                <span className="text-gray-700 dark:text-gray-300">{file}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+            No {category} files identified
+          </p>
+        )}
+      </div>
+    );
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#FFFAF5] dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">
+            Analyzing repository...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#FFFAF5] dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+          <button
+            onClick={() => window.history.back()}
+            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FFFAF5] dark:bg-gray-900">
@@ -79,12 +176,89 @@ export default function AnalysisPage() {
           <p className="text-gray-600 dark:text-gray-400">{repoUrl}</p>
         </div>
 
-        {/* Progress Steps */}
+        {/* Progress Steps with Repository Analysis */}
         <div className="mb-12">
           <div className="space-y-4">
-            {steps.map((step, index) => (
+            {/* Repository Analysis Step */}
+            <div
+              className={`flex items-start space-x-4 p-4 rounded-lg border-2 ${
+                steps[0].status === "completed"
+                  ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                  : steps[0].status === "in_progress"
+                  ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
+                  : "border-gray-200 dark:border-gray-700"
+              }`}
+            >
               <div
-                key={index}
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  steps[0].status === "completed"
+                    ? "bg-green-500"
+                    : steps[0].status === "in_progress"
+                    ? "bg-orange-500"
+                    : "bg-gray-200 dark:bg-gray-700"
+                }`}
+              >
+                {steps[0].status === "completed" ? (
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                ) : (
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    1
+                  </span>
+                )}
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-black dark:text-white">
+                  {steps[0].title}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  {steps[0].description}
+                </p>
+
+                {/* Repository Analysis Content */}
+                {steps[0].status === "completed" && (
+                  <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* File Tree */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                      <h2 className="text-sm font-semibold text-black dark:text-white mb-3">
+                        Repository Structure
+                      </h2>
+                      <div className="max-h-[300px] overflow-y-auto">
+                        <FileTree files={allFiles} />
+                      </div>
+                    </div>
+
+                    {/* Key Files */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                      <h2 className="text-sm font-semibold text-black dark:text-white mb-3">
+                        Key Files Identified
+                      </h2>
+                      <div className="space-y-4 max-h-[300px] overflow-y-auto">
+                        {renderKeyFileCategory("frontend", "Frontend Files")}
+                        {renderKeyFileCategory("backend", "Backend Files")}
+                        {renderKeyFileCategory("infra", "Infrastructure Files")}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Remaining Steps */}
+            {steps.slice(1).map((step, index) => (
+              <div
+                key={index + 1}
                 className={`flex items-start space-x-4 p-4 rounded-lg border-2 ${
                   step.status === "completed"
                     ? "border-green-500 bg-green-50 dark:bg-green-900/20"
@@ -118,7 +292,7 @@ export default function AnalysisPage() {
                     </svg>
                   ) : (
                     <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                      {index + 1}
+                      {index + 2}
                     </span>
                   )}
                 </div>
@@ -129,63 +303,6 @@ export default function AnalysisPage() {
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     {step.description}
                   </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* File Selection */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-          <h2 className="text-xl font-semibold text-black dark:text-white mb-4">
-            Select Files to Analyze
-          </h2>
-          <div className="space-y-2">
-            {files.map((file) => (
-              <div
-                key={file.path}
-                className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                onClick={() => toggleFileSelection(file.path)}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedFiles.has(file.path)}
-                  onChange={() => {}}
-                  className="w-5 h-5 text-orange-500 rounded border-gray-300 focus:ring-orange-500"
-                />
-                <div className="flex items-center space-x-2">
-                  {file.type === "directory" ? (
-                    <svg
-                      className="w-5 h-5 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-                      />
-                    </svg>
-                  ) : (
-                    <svg
-                      className="w-5 h-5 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                  )}
-                  <span className="text-gray-700 dark:text-gray-300">
-                    {file.name}
-                  </span>
                 </div>
               </div>
             ))}

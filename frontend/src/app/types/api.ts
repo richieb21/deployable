@@ -40,8 +40,8 @@ export interface IdentifyKeyFilesRequest {
 export interface IdentifyKeyFilesResponse {
   all_files: string[];
   key_files: {
-    frontend: string;
-    backend: string;
-    infra: string;
+    frontend: string[];
+    backend: string[];
+    infra: string[];
   };
 }
