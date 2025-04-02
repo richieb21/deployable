@@ -15,20 +15,29 @@ export enum Severity {
   INFO = "INFO",
 }
 
-export type Recommendation = {
+export interface AnalysisRequest {
+  repo_url: string;
+  api_key?: string;
+}
+
+export interface CodeSnippet {
+  before?: string;
+  after?: string;
+}
+
+export interface Recommendation {
   title: string;
   description: string;
   file_path: string;
-  severity: Severity;
-  category: IssueCategory;
-  action_items: string[];
-};
-
-export interface AnalysisRequest {
-  repo_url: string;
+  severity: string;
+  category: string;
+  action_items?: string[];
+  code_snippets?: CodeSnippet;
+  references?: string[];
 }
 
 export interface AnalysisResponse {
   repository: string;
-  recommendations?: Recommendation[];
+  recommendations: Recommendation[];
+  analysis_timestamp: string;
 }

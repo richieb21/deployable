@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data: AnalysisResponse = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json(data, { status: 200 });
   } catch (error) {
     console.error("Analysis API error:", error);
     return NextResponse.json(
