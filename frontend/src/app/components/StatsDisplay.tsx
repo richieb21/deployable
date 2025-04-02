@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { AnalysisResponse } from "../types/api";
+import { motion, AnimatePresence } from "framer-motion";
 
 type StatMetric = {
   name: string;
   value: number;
   color: string;
+  gradient?: string;
 };
 
 const CircleGraph = ({
@@ -17,10 +19,49 @@ const CircleGraph = ({
   size?: "normal" | "large";
 }) => {
   const [mounted, setMounted] = useState(false);
-
+  const [displayValue, setDisplayValue] = useState(0);
+  const prevValueRef = useRef(0);
+  
+  // Animation duration in seconds
+  const animationDuration = 1.5;
+  
   useEffect(() => {
     setMounted(true);
   }, []);
+  
+  // Animate the value when it changes
+  useEffect(() => {
+    if (!mounted) return;
+    
+    const startValue = prevValueRef.current;
+    const endValue = metric.value;
+    const difference = endValue - startValue;
+    const startTime = performance.now();
+    const endTime = startTime + animationDuration * 1000;
+    
+    const animateValue = (timestamp: number) => {
+      if (timestamp >= endTime) {
+        setDisplayValue(endValue);
+        prevValueRef.current = endValue;
+        return;
+      }
+      
+      const elapsed = timestamp - startTime;
+      const progress = elapsed / (animationDuration * 1000);
+      const easedProgress = easeOutCubic(progress);
+      const currentValue = Math.round(startValue + difference * easedProgress);
+      
+      setDisplayValue(currentValue);
+      requestAnimationFrame(animateValue);
+    };
+    
+    requestAnimationFrame(animateValue);
+  }, [metric.value, mounted]);
+  
+  // Easing function for smoother animation
+  const easeOutCubic = (x: number): number => {
+    return 1 - Math.pow(1 - x, 3);
+  };
 
   if (!mounted) return null;
 
@@ -28,8 +69,11 @@ const CircleGraph = ({
   const radius = size === "large" ? 70 : 45;
   const circumference = 2 * Math.PI * radius;
 
-  // Calculate the dash offset based on the value (0-100)
-  const dashOffset = circumference - (metric.value / 100) * circumference;
+  // Calculate the dash offset based on the display value (0-100)
+  const dashOffset = circumference - (displayValue / 100) * circumference;
+
+  // Generate unique gradient ID
+  const gradientId = `gradient-${metric.name.toLowerCase().replace(/\s+/g, '-')}`;
 
   return (
     <div className="flex flex-col items-center">
@@ -38,6 +82,16 @@ const CircleGraph = ({
           size === "large" ? "w-56 h-56" : "w-36 h-36"
         } flex items-center justify-center`}
       >
+        {/* SVG Gradient Definitions */}
+        <svg width="0" height="0" className="absolute">
+          <defs>
+            <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={metric.color} />
+              <stop offset="100%" stopColor={metric.gradient || metric.color} />
+            </linearGradient>
+          </defs>
+        </svg>
+
         {/* Background circle */}
         <svg className="w-full h-full -rotate-90 absolute">
           <circle
@@ -51,18 +105,19 @@ const CircleGraph = ({
           />
         </svg>
 
-        {/* Foreground circle */}
+        {/* Foreground circle with smooth transition */}
         <svg className="w-full h-full -rotate-90 absolute">
           <circle
             cx="50%"
             cy="50%"
             r={radius}
-            stroke={metric.color}
+            stroke={`url(#${gradientId})`}
             strokeWidth={size === "large" ? "14" : "10"}
             fill="transparent"
             strokeDasharray={circumference}
             strokeDashoffset={dashOffset}
             strokeLinecap="round"
+            style={{ transition: "stroke-dashoffset 1.5s cubic-bezier(0.33, 1, 0.68, 1)" }}
           />
         </svg>
 
@@ -72,7 +127,7 @@ const CircleGraph = ({
             size === "large" ? "text-5xl" : "text-3xl"
           } font-bold text-white`}
         >
-          {metric.value}
+          {displayValue}
         </div>
       </div>
       {size !== "large" && (
@@ -85,19 +140,30 @@ const CircleGraph = ({
 };
 
 // Helper function to get color based on score
-const getScoreColor = (score: number): string => {
-  if (score >= 80) return "#86EFAC"; // Green for high scores
-  if (score >= 50) return "#FCD34D"; // Yellow for medium scores
-  return "#F87171"; // Red for low scores
+const getScoreColor = (score: number): { main: string; gradient: string } => {
+  if (score >= 80) return { 
+    main: "#86EFAC", // Green for high scores
+    gradient: "#4ADE80" 
+  };
+  if (score >= 50) return { 
+    main: "#FCD34D", // Yellow for medium scores
+    gradient: "#FBBF24" 
+  };
+  return { 
+    main: "#F87171", // Red for low scores
+    gradient: "#EF4444" 
+  };
 };
 
-// Update the component props to include loading state
+// Update the component props to include completedIssues
 export const StatsDisplay = ({
   analysisData,
   loading = false,
+  completedIssues = {},
 }: {
   analysisData?: AnalysisResponse | null;
   loading?: boolean;
+  completedIssues?: { [key: string]: boolean };
 }) => {
   // If loading, show a loading state instead of the graphs
   if (loading) {
@@ -119,19 +185,26 @@ export const StatsDisplay = ({
           name: "Overall Score",
           value: 89,
           color: "#86EFAC",
+          gradient: "#4ADE80"
         },
         metrics: [
-          { name: "Readability", value: 19, color: "#F87171" },
-          { name: "Security", value: 55, color: "#FCD34D" },
-          { name: "Scalability", value: 100, color: "#86EFAC" },
-          { name: "Performance", value: 100, color: "#86EFAC" },
-          { name: "Cost", value: 55, color: "#FCD34D" },
+          { name: "Readability", value: 19, color: "#F87171", gradient: "#EF4444" },
+          { name: "Security", value: 55, color: "#FCD34D", gradient: "#FBBF24" },
+          { name: "Scalability", value: 100, color: "#86EFAC", gradient: "#4ADE80" },
+          { name: "Performance", value: 100, color: "#86EFAC", gradient: "#4ADE80" },
+          { name: "Cost", value: 55, color: "#FCD34D", gradient: "#FBBF24" },
         ],
       };
     }
 
-    // Count recommendations by category
-    const categories = analysisData.recommendations.reduce((acc, rec) => {
+    // Filter out completed issues
+    const activeRecommendations = analysisData.recommendations.filter(rec => {
+      const issueId = `${rec.title}-${rec.file_path}`;
+      return !completedIssues[issueId];
+    });
+
+    // Count recommendations by category (only counting active ones)
+    const categories = activeRecommendations.reduce((acc, rec) => {
       const category = rec.category?.toLowerCase() || "other";
       acc[category] = (acc[category] || 0) + 1;
       return acc;
@@ -163,34 +236,51 @@ export const StatsDisplay = ({
         5
     );
 
+    const overallColors = getScoreColor(overallScore);
+    const securityColors = getScoreColor(securityScore);
+    const readabilityColors = getScoreColor(readabilityScore);
+    const performanceColors = getScoreColor(performanceScore);
+    const scalabilityColors = getScoreColor(scalabilityScore);
+    const costColors = getScoreColor(costScore);
+
     return {
       mainMetric: {
         name: "Overall Score",
         value: overallScore,
-        color: getScoreColor(overallScore),
+        color: overallColors.main,
+        gradient: overallColors.gradient
       },
       metrics: [
         {
           name: "Readability",
           value: readabilityScore,
-          color: getScoreColor(readabilityScore),
+          color: readabilityColors.main,
+          gradient: readabilityColors.gradient
         },
         {
           name: "Security",
           value: securityScore,
-          color: getScoreColor(securityScore),
+          color: securityColors.main,
+          gradient: securityColors.gradient
         },
         {
           name: "Performance",
           value: performanceScore,
-          color: getScoreColor(performanceScore),
+          color: performanceColors.main,
+          gradient: performanceColors.gradient
         },
         {
           name: "Scalability",
           value: scalabilityScore,
-          color: getScoreColor(scalabilityScore),
+          color: scalabilityColors.main,
+          gradient: scalabilityColors.gradient
         },
-        { name: "Cost", value: costScore, color: getScoreColor(costScore) },
+        { 
+          name: "Cost", 
+          value: costScore, 
+          color: costColors.main,
+          gradient: costColors.gradient
+        },
       ],
     };
   };
@@ -209,35 +299,42 @@ export const StatsDisplay = ({
   };
 
   return (
-    <div className="max-w-5xl mx-auto bg-[#1A1817] rounded-xl p-8">
-      {/* Main metric with description */}
-      <div className="flex flex-col md:flex-row items-start justify-between mb-10 gap-8">
-        <div className="flex flex-col items-center">
-          <CircleGraph metric={mainMetric} size="large" />
-          <div className="mt-2 text-xl font-semibold text-gray-400">
-            Overall Score
+    <div className="max-w-5xl mx-auto space-y-6">
+      {/* Main metric with description - First block */}
+      <div className="bg-[#1A1817] rounded-xl p-8 shadow-lg">
+        <div className="flex flex-col md:flex-row items-start justify-between gap-8">
+          <div className="flex flex-col items-center">
+            <CircleGraph metric={mainMetric} size="large" />
+            <div className="mt-2 text-xl font-semibold text-gray-400">
+              Overall Score
+            </div>
           </div>
-        </div>
 
-        <div className="md:w-2/3 md:pt-8">
-          <h3 className="text-2xl font-bold mb-3 text-white">
-            {mainMetric.value >= 80
-              ? "Great Overall"
-              : mainMetric.value >= 50
-              ? "Needs Improvement"
-              : "Critical Issues Found"}
-          </h3>
-          <p className="text-gray-400 text-lg leading-relaxed">
-            {getDescription()}
-          </p>
+          <div className="md:w-2/3 md:pt-8">
+            <h3 className="text-2xl font-bold mb-3 text-white">
+              {mainMetric.value >= 80
+                ? "Great Overall"
+                : mainMetric.value >= 50
+                ? "Needs Improvement"
+                : "Critical Issues Found"}
+            </h3>
+            <p className="text-gray-400 text-lg leading-relaxed">
+              {getDescription()}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Smaller metrics row - using grid for better spacing */}
-      <div className="grid grid-cols-5 gap-0 mx-auto">
-        {metrics.map((metric, index) => (
-          <CircleGraph key={`${metric.name}-${index}`} metric={metric} />
-        ))}
+      {/* Smaller metrics row - Second block */}
+      <div className="bg-[#1A1817] rounded-xl p-8 shadow-lg">
+        <h3 className="text-xl font-semibold text-white mb-6 px-4">Category Scores</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mx-auto">
+          {metrics.map((metric, index) => (
+            <div key={`${metric.name}-${index}`} className="flex flex-col items-center">
+              <CircleGraph metric={metric} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

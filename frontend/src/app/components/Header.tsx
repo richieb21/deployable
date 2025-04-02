@@ -1,9 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
 
-export const Header = () => {
+export interface HeaderProps {
+  variant?: "dark" | "light";
+}
+
+export const Header = ({ variant = "dark" }: HeaderProps) => {
   return (
-    <header className="fixed top-0 left-0 right-0 bg-[#121212]/80 backdrop-blur-md z-10">
+    <header
+      className={`fixed top-0 left-0 right-0 backdrop-blur-md z-10 ${
+        variant === "dark" ? "bg-[#121212]/80" : "bg-white/80"
+      }`}
+    >
       <div className="px-6 py-4 flex justify-between items-center">
         <Link href="/" className="flex items-center gap-2">
           <Image
@@ -16,22 +24,13 @@ export const Header = () => {
         </Link>
 
         <nav className="flex gap-6 text-sm text-gray-400">
-          <a
-            href="#"
-            className="hover:text-white transition-colors"
-          >
+          <a href="#" className="hover:text-white transition-colors">
             Documentation
           </a>
-          <a
-            href="#"
-            className="hover:text-white transition-colors"
-          >
+          <a href="#" className="hover:text-white transition-colors">
             GitHub
           </a>
-          <a
-            href="#"
-            className="hover:text-white transition-colors"
-          >
+          <a href="#" className="hover:text-white transition-colors">
             Contact
           </a>
         </nav>
