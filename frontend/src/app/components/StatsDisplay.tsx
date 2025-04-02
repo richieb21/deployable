@@ -162,31 +162,21 @@ const getScoreColor = (score: number): { main: string; gradient: string } => {
   };
 };
 
-// Update the component props to include changedIssueId
+// Update the component props to include onScoreUpdate
 export const StatsDisplay = ({
   analysisData,
   loading = false,
   completedIssues = {},
   changedIssueId = null,
+  onScoreUpdate,
 }: {
   analysisData?: AnalysisResponse | null;
   loading?: boolean;
   completedIssues?: { [key: string]: boolean };
   changedIssueId?: string | null;
+  onScoreUpdate?: (score: number) => void;
 }) => {
-  // If loading, show a loading state instead of the graphs
-  if (loading) {
-    return (
-      <div className="max-w-5xl mx-auto bg-[#1A1817] rounded-xl p-8 flex justify-center items-center min-h-[300px]">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mb-4"></div>
-          <p className="text-gray-400 text-lg">Analyzing repository...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Calculate metrics based on recommendations if available
+  // Calculate metrics regardless of loading state
   const calculateMetrics = () => {
     if (!analysisData || !analysisData.recommendations) {
       return {
@@ -315,6 +305,25 @@ export const StatsDisplay = ({
   };
 
   const { mainMetric, metrics } = calculateMetrics();
+
+  // Call onScoreUpdate when mainMetric.value changes
+  useEffect(() => {
+    if (onScoreUpdate) {
+      onScoreUpdate(mainMetric.value);
+    }
+  }, [mainMetric.value, onScoreUpdate]);
+
+  // If loading, show a loading state instead of the graphs
+  if (loading) {
+    return (
+      <div className="max-w-5xl mx-auto bg-[#1A1817] rounded-xl p-8 flex justify-center items-center min-h-[300px]">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mb-4"></div>
+          <p className="text-gray-400 text-lg">Analyzing repository...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Generate description based on overall score
   const getDescription = () => {

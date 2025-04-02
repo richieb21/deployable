@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { StatsLayout } from "../components/StatsLayout";
 import { useAnalysis } from "../hooks/useAnalysis";
 import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function StatsPage() {
   const searchParams = useSearchParams();
@@ -15,6 +16,8 @@ export default function StatsPage() {
   }>({});
   const prevCompletedCountRef = useRef(0);
   const changedIssueIdRef = useRef<string | null>(null);
+  const [showProgressBar, setShowProgressBar] = useState(false);
+  const [overallScore, setOverallScore] = useState(0);
 
   // Extract just the repo name from the URL
   const repoName = repoUrl.split("/").slice(-2).join("/");
@@ -46,13 +49,62 @@ export default function StatsPage() {
     setCompletedIssues(updatedCompletedIssues);
   };
 
+  // Handle scroll to show/hide progress bar
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show progress bar when scrolled past 300px
+      setShowProgressBar(window.scrollY > 300);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Update overall score when data or completed issues change
+  const handleScoreUpdate = (score: number) => {
+    setOverallScore(score);
+  };
+
   return (
     <StatsLayout repoName={repoName}>
+      {/* Floating progress bar */}
+      <AnimatePresence>
+        {showProgressBar && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-16 left-0 right-0 z-20 bg-[#121212]/90 backdrop-blur-md py-2 px-4 border-b border-gray-800"
+          >
+            <div className="max-w-5xl mx-auto flex items-center gap-4">
+              <div className="text-sm font-medium text-white">
+                Overall Score: {overallScore}
+              </div>
+              <div className="flex-1 bg-gray-800 rounded-full h-2.5">
+                <div
+                  className="h-2.5 rounded-full transition-all duration-500 ease-out"
+                  style={{
+                    width: `${overallScore}%`,
+                    backgroundColor:
+                      overallScore >= 80
+                        ? "#4ADE80"
+                        : overallScore >= 50
+                        ? "#FBBF24"
+                        : "#EF4444",
+                  }}
+                ></div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <StatsDisplay
         analysisData={data}
         loading={loading}
         completedIssues={completedIssues}
         changedIssueId={changedIssueIdRef.current}
+        onScoreUpdate={handleScoreUpdate}
       />
 
       <div className="mt-16">
