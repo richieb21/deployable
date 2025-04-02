@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from "react";
 import { AnalysisResponse } from "../types/api";
-import { motion, AnimatePresence } from "framer-motion";
 
 type StatMetric = {
   name: string;
@@ -14,7 +13,6 @@ type StatMetric = {
 const CircleGraph = ({
   metric,
   size = "normal",
-  shouldAnimate = false,
 }: {
   metric: StatMetric;
   size?: "normal" | "large";
@@ -23,43 +21,43 @@ const CircleGraph = ({
   const [mounted, setMounted] = useState(false);
   const [displayValue, setDisplayValue] = useState(0);
   const prevValueRef = useRef(0);
-  
+
   // Animation duration in seconds
   const animationDuration = 1.5;
-  
+
   useEffect(() => {
     setMounted(true);
   }, []);
-  
+
   // Animate the value when it changes
   useEffect(() => {
     if (!mounted) return;
-    
+
     const startValue = prevValueRef.current;
     const endValue = metric.value;
     const difference = endValue - startValue;
     const startTime = performance.now();
     const endTime = startTime + animationDuration * 1000;
-    
+
     const animateValue = (timestamp: number) => {
       if (timestamp >= endTime) {
         setDisplayValue(endValue);
         prevValueRef.current = endValue;
         return;
       }
-      
+
       const elapsed = timestamp - startTime;
       const progress = elapsed / (animationDuration * 1000);
       const easedProgress = easeOutCubic(progress);
       const currentValue = Math.round(startValue + difference * easedProgress);
-      
+
       setDisplayValue(currentValue);
       requestAnimationFrame(animateValue);
     };
-    
+
     requestAnimationFrame(animateValue);
   }, [metric.value, mounted]);
-  
+
   // Easing function for smoother animation
   const easeOutCubic = (x: number): number => {
     return 1 - Math.pow(1 - x, 3);
@@ -75,7 +73,9 @@ const CircleGraph = ({
   const dashOffset = circumference - (displayValue / 100) * circumference;
 
   // Generate unique gradient ID
-  const gradientId = `gradient-${metric.name.toLowerCase().replace(/\s+/g, '-')}`;
+  const gradientId = `gradient-${metric.name
+    .toLowerCase()
+    .replace(/\s+/g, "-")}`;
 
   return (
     <div className="flex flex-col items-center">
@@ -119,7 +119,10 @@ const CircleGraph = ({
             strokeDasharray={circumference}
             strokeDashoffset={dashOffset}
             strokeLinecap="round"
-            style={{ transition: "stroke-dashoffset 1.5s cubic-bezier(0.33, 1, 0.68, 1)" }}
+            style={{
+              transition:
+                "stroke-dashoffset 1.5s cubic-bezier(0.33, 1, 0.68, 1)",
+            }}
           />
         </svg>
 
@@ -143,17 +146,19 @@ const CircleGraph = ({
 
 // Helper function to get color based on score
 const getScoreColor = (score: number): { main: string; gradient: string } => {
-  if (score >= 80) return { 
-    main: "#86EFAC", // Green for high scores
-    gradient: "#4ADE80" 
-  };
-  if (score >= 50) return { 
-    main: "#FCD34D", // Yellow for medium scores
-    gradient: "#FBBF24" 
-  };
-  return { 
+  if (score >= 80)
+    return {
+      main: "#86EFAC", // Green for high scores
+      gradient: "#4ADE80",
+    };
+  if (score >= 50)
+    return {
+      main: "#FCD34D", // Yellow for medium scores
+      gradient: "#FBBF24",
+    };
+  return {
     main: "#F87171", // Red for low scores
-    gradient: "#EF4444" 
+    gradient: "#EF4444",
   };
 };
 
@@ -189,20 +194,40 @@ export const StatsDisplay = ({
           name: "Overall Score",
           value: 89,
           color: "#86EFAC",
-          gradient: "#4ADE80"
+          gradient: "#4ADE80",
         },
         metrics: [
-          { name: "Readability", value: 19, color: "#F87171", gradient: "#EF4444" },
-          { name: "Security", value: 55, color: "#FCD34D", gradient: "#FBBF24" },
-          { name: "Scalability", value: 100, color: "#86EFAC", gradient: "#4ADE80" },
-          { name: "Performance", value: 100, color: "#86EFAC", gradient: "#4ADE80" },
+          {
+            name: "Readability",
+            value: 19,
+            color: "#F87171",
+            gradient: "#EF4444",
+          },
+          {
+            name: "Security",
+            value: 55,
+            color: "#FCD34D",
+            gradient: "#FBBF24",
+          },
+          {
+            name: "Scalability",
+            value: 100,
+            color: "#86EFAC",
+            gradient: "#4ADE80",
+          },
+          {
+            name: "Performance",
+            value: 100,
+            color: "#86EFAC",
+            gradient: "#4ADE80",
+          },
           { name: "Cost", value: 55, color: "#FCD34D", gradient: "#FBBF24" },
         ],
       };
     }
 
     // Filter out completed issues
-    const activeRecommendations = analysisData.recommendations.filter(rec => {
+    const activeRecommendations = analysisData.recommendations.filter((rec) => {
       const issueId = `${rec.title}-${rec.file_path}`;
       return !completedIssues[issueId];
     });
@@ -252,38 +277,38 @@ export const StatsDisplay = ({
         name: "Overall Score",
         value: overallScore,
         color: overallColors.main,
-        gradient: overallColors.gradient
+        gradient: overallColors.gradient,
       },
       metrics: [
         {
           name: "Readability",
           value: readabilityScore,
           color: readabilityColors.main,
-          gradient: readabilityColors.gradient
+          gradient: readabilityColors.gradient,
         },
         {
           name: "Security",
           value: securityScore,
           color: securityColors.main,
-          gradient: securityColors.gradient
+          gradient: securityColors.gradient,
         },
         {
           name: "Performance",
           value: performanceScore,
           color: performanceColors.main,
-          gradient: performanceColors.gradient
+          gradient: performanceColors.gradient,
         },
         {
           name: "Scalability",
           value: scalabilityScore,
           color: scalabilityColors.main,
-          gradient: scalabilityColors.gradient
+          gradient: scalabilityColors.gradient,
         },
-        { 
-          name: "Cost", 
-          value: costScore, 
+        {
+          name: "Cost",
+          value: costScore,
           color: costColors.main,
-          gradient: costColors.gradient
+          gradient: costColors.gradient,
         },
       ],
     };
@@ -308,9 +333,9 @@ export const StatsDisplay = ({
       <div className="bg-[#1A1817] rounded-xl p-8 shadow-lg">
         <div className="flex flex-col md:flex-row items-start justify-between gap-8">
           <div className="flex flex-col items-center">
-            <CircleGraph 
-              metric={mainMetric} 
-              size="large" 
+            <CircleGraph
+              metric={mainMetric}
+              size="large"
               shouldAnimate={changedIssueId !== null}
             />
             <div className="mt-2 text-xl font-semibold text-gray-400">
@@ -335,15 +360,22 @@ export const StatsDisplay = ({
 
       {/* Smaller metrics row - Second block */}
       <div className="bg-[#1A1817] rounded-xl p-8 shadow-lg">
-        <h3 className="text-xl font-semibold text-white mb-6 px-4">Category Scores</h3>
+        <h3 className="text-xl font-semibold text-white mb-6 px-4">
+          Category Scores
+        </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mx-auto">
           {metrics.map((metric, index) => (
-            <div key={`${metric.name}-${index}`} className="flex flex-col items-center">
-              <CircleGraph 
-                metric={metric} 
-                shouldAnimate={changedIssueId !== null && 
-                  (changedIssueId.includes(metric.name.toUpperCase()) || 
-                   metric.name.toUpperCase() === "OVERALL")}
+            <div
+              key={`${metric.name}-${index}`}
+              className="flex flex-col items-center"
+            >
+              <CircleGraph
+                metric={metric}
+                shouldAnimate={
+                  changedIssueId !== null &&
+                  (changedIssueId.includes(metric.name.toUpperCase()) ||
+                    metric.name.toUpperCase() === "OVERALL")
+                }
               />
             </div>
           ))}
