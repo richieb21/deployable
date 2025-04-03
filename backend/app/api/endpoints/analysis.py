@@ -14,6 +14,8 @@ from app.services.multithreading_service import LLMClientPool
 
 logger = logging.getLogger(__name__)
 
+# time to decouple key files from analysis endpoint, provide those things as a request parameter
+
 router = APIRouter(
     prefix="/analysis",
     tags=["analysis"],
