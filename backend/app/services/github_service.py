@@ -6,6 +6,7 @@ import requests
 import os
 import urllib3
 import base64
+from functools import lru_cache
 
 urllib3.disable_warnings(urllib3.exceptions.NotOpenSSLWarning)
 
@@ -18,8 +19,6 @@ class GithubService:
         # use environment personal access token, fallback will be unauthenticated requests
         self.github_token = pat or os.getenv("GITHUB_PAT")
         self.base_url = "https://api.github.com"
-        # Cache for repository metadata to avoid redundant API calls
-        self._repo_cache = {}
 
         # Files to exclude
         self.excluded_files = [
@@ -144,6 +143,7 @@ class GithubService:
             "Accept": "application/vnd.github+json"
         }
 
+    @lru_cache(maxsize=128)
     def _get_repo_info(self, owner: str, repo_name: str) -> Dict[str, Any]:
         """
         Get repository information and cache it to avoid redundant API calls.
