@@ -1,9 +1,9 @@
 import os
 from openai import OpenAI
+import anthropic
 from typing import List, Dict, Any, Optional, Literal
 from dotenv import load_dotenv
 from logging import getLogger
-import json
 import re
 from abc import ABC, abstractmethod
 
@@ -26,7 +26,7 @@ class BaseLanguageModel(ABC):
         pass
 
     def _extract_json(self, text: str) -> str:
-        """Extract JSON content from model response"""
+        """Extract JSON content from model response, ignoring text outside of triple backticks"""
         json_pattern = r"```(?:json)?\s*([\s\S]*?)```"
         matches = re.findall(json_pattern, text)
         
@@ -63,7 +63,7 @@ class BaseLanguageModel(ABC):
         - Config files
         - Main app entry points
         
-        Ignore tests, docs, packages, and UI components. Absolutely do not add any comments, just list the files
+        Ignore tests, docs, packages, and non-essential UI components. Absolutely do not add any comments, just list the files
         
         Return strictly JSON format: 
         {{"frontend": [], "backend": [], "infra": []}}
@@ -206,10 +206,41 @@ class GroqService(BaseLanguageModel):
         except Exception as e:
             logger.error(f"Error calling Groq API: {str(e)}")
             raise
+
+class ClaudeService(BaseLanguageModel):
+    """Tencent Hunyuan Implementation"""
+    def _initialize_client(self):
+        self.api_key = self.api_key or os.getenv("CLAUDE_API_KEY")
+        if not self.api_key:
+            logger.error("No Claude API key provided")
+            raise ValueError("CLAUDE_API_KEY environment variable not set")
+        
+        self.client = anthropic.Anthropic(
+            api_key=self.api_key
+        )
+        self.model = "claude-3-7-sonnet-20250219"
+    
+    def call_model(self, prompt: str):
+        messages = [
+            {"role": "user", "content": prompt}
+        ]
+
+        try:
+            response = self.client.messages.create(
+                model=self.model,
+                messages=messages,
+                max_tokens=1024
+            )
+            raw_content = response.content[0].text
+            logger.info(raw_content)
+            return self._extract_json(raw_content)
+        except Exception as e:
+            logger.error(f"Error calling Claude API: {str(e)}")
+            raise
         
 
-
-def create_language_service(provider: Literal["deepseek", "openai", "groq"] = "deepseek", api_key: Optional[str] = None) -> BaseLanguageModel:
+# Fallback to deepseek bc its cheap lol
+def create_language_service(provider: Literal["deepseek", "openai", "groq", "claude"] = "deepseek", api_key: Optional[str] = None) -> BaseLanguageModel:
     """Factory function to create the appropriate language model service"""
     if provider == "deepseek":
         return DeepseekService(api_key)
@@ -217,3 +248,5 @@ def create_language_service(provider: Literal["deepseek", "openai", "groq"] = "d
         return OpenAIService(api_key)
     elif provider == "groq":
         return GroqService()
+    elif provider == "claude":
+        return ClaudeService()

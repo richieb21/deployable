@@ -10,6 +10,7 @@ import time
 from app.models.schemas import AnalysisRequest, AnalysisResponse, IdentifyKeyFilesRequest, IdentifyKeyFilesResponse
 from app.services.github import GithubService
 from app.services.LLM_service import create_language_service
+from app.services.multithreading_service import LLMClientPool
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ router = APIRouter(
 )
 
 github_service = GithubService()
-CURRENT_LLM_PROIVDER = "deepseek"
+CURRENT_LLM_PROIVDER = "groq"
 
 recommendations_lock = threading.Lock()
 
@@ -131,31 +132,6 @@ def chunk_files(files: List[Dict[str, str]], chunk_size: int = 5) -> List[List[D
     logger.info(f"Created {len(chunks)} chunks with up to {chunk_size} files per chunk")
     return chunks
 
-class DeepseekClientPool:
-    """Client pool to reuse DeepSeek connections"""
-    def __init__(self, size=5, api_key=None):
-        self.clients = []
-        self.size = size
-        self.api_key = api_key
-        self.lock = threading.Lock()
-        self._initialize_clients()
-    
-    def _initialize_clients(self):
-        for _ in range(self.size):
-            self.clients.append(create_language_service(CURRENT_LLM_PROIVDER))
-        logger.info(f"Initialized pool of {self.size} DeepSeek clients")
-    
-    def get_client(self):
-        with self.lock:
-            if not self.clients:
-                # If pool is empty, create a new client
-                return create_language_service()
-            return self.clients.pop()
-    
-    def return_client(self, client):
-        with self.lock:
-            self.clients.append(client)
-
 @router.post("/", response_model=AnalysisResponse)
 async def analyze_repository(request: AnalysisRequest):
     """
@@ -211,10 +187,9 @@ async def analyze_repository(request: AnalysisRequest):
         
         all_recommendations = []
         
-        # Create a pool of DeepSeek clients
-        api_key = request.api_key if hasattr(request, 'api_key') else None
+        # Create a pool of LLM clients
         max_workers = max(1, min(len(file_chunks), 10))  # Ensure at least 1 worker
-        client_pool = DeepseekClientPool(size=max_workers, api_key=api_key)
+        client_pool = LLMClientPool(size=max_workers, llm_provider=CURRENT_LLM_PROIVDER)
         
         # Use a thread pool executor for parallel processing
         analysis_start = time.time()
@@ -268,22 +243,18 @@ async def identify_key_files(request: IdentifyKeyFilesRequest):
     repo_url = str(request.repo_url)
     all_files = github_service.list_filenames(repo_url)
 
-    openai_service = create_language_service("openai")
+    llm = create_language_service("claude")
 
-    prompt_identify = openai_service.identify_files_prompt(all_files)
-    prompt_tech_stack = openai_service.get_tech_stack_prompt(all_files)
+    prompt_identify = llm.identify_files_prompt(all_files)
+    prompt_tech_stack = llm.get_tech_stack_prompt(all_files)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        future_identify = executor.submit(openai_service.call_model, prompt_identify)
-        future_tech_stack = executor.submit(openai_service.call_model, prompt_tech_stack)
+        future_identify = executor.submit(llm.call_model, prompt_identify)
+        future_tech_stack = executor.submit(llm.call_model, prompt_tech_stack)
 
         # Get results from both futures
         key_files = json.loads(future_identify.result())
         tech_stack = json.loads(future_tech_stack.result())
-
-    logger.info(type(key_files))
-    logger.info(type(all_files))
-    logger.info(key_files)
 
     return IdentifyKeyFilesResponse(
         all_files=all_files,
