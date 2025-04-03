@@ -8,7 +8,7 @@ import threading
 import time
 
 from app.models.schemas import AnalysisRequest, AnalysisResponse, IdentifyKeyFilesRequest, IdentifyKeyFilesResponse
-from app.services.github import GithubService
+from backend.app.services.github_service import GithubService
 from app.services.LLM_service import create_language_service
 from app.services.multithreading_service import LLMClientPool
 
