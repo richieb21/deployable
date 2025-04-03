@@ -24,6 +24,12 @@ export const Header = ({ variant = "dark" }: HeaderProps) => {
         </Link>
 
         <nav className="flex gap-6 text-sm text-gray-400">
+          <button
+            onClick={() => localStorage.clear()}
+            className="hover:text-white transition-colors"
+          >
+            Clear Cache
+          </button>
           <a href="#" className="hover:text-white transition-colors">
             Documentation
           </a>
