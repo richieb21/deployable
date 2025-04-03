@@ -63,3 +63,7 @@ class IdentifyKeyFilesResponse(BaseModel):
         default_factory=KeyFiles,
         description="Categorized key files for analysis"
     )
+    tech_stack: TechStack = Field(
+        default_factory=TechStack,
+        description="Technology stack detected"
+    )

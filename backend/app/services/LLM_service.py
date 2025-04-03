@@ -63,11 +63,32 @@ class BaseLanguageModel(ABC):
         - Config files
         - Main app entry points
         
-        Ignore tests, docs, packages, and UI components.
+        Ignore tests, docs, packages, and UI components. Absolutely do not add any comments, just list the files
         
         Return strictly JSON format: 
         {{"frontend": [], "backend": [], "infra": []}}
         Maximum 15 files total.
+        """
+        return prompt
+
+    def get_tech_stack_prompt(self, files):
+        """Create a prompt to extract the tech stack"""
+        prompt = f"""
+        Analyze these files and identify the main technologies used:
+        {str(files)}
+
+        Return strictly in this JSON format:
+        {{
+            "frontend": [],  # Frontend technologies with versions when available (e.g. "React 18.2", "Next.js 14")
+            "backend": [],   # Backend technologies with versions when available (e.g. "Python 3.9", "FastAPI 0.100")
+            "infra": []     # Infrastructure technologies (e.g. "Docker", "GitHub Actions")
+        }}
+
+        Rules:
+        1. Include version numbers when clearly identifiable
+        2. Only include technologies that are definitively present in the files
+        3. List maximum 5 most important technologies per category
+        4. Focus on production dependencies, ignore dev dependencies
         """
         return prompt
 
@@ -95,14 +116,6 @@ class BaseLanguageModel(ABC):
         for file in files:
             prompt += f"File: {file['path']}\n```\n{file['content']}\n```\n\n"
         return prompt
-
-    def estimate_tokens(self, text: str) -> int:
-        """Estimate the number of tokens in a text string"""
-        char_count = len(text)
-        code_block_count = text.count("```")
-        special_char_count = sum(1 for c in text if not c.isalnum() and not c.isspace())
-        adjusted_count = char_count + (code_block_count * 5) + (special_char_count * 0.5)
-        return int(adjusted_count // 3.5)
 
 class DeepseekService(BaseLanguageModel):
     """Deepseek-specific implementation"""
@@ -164,9 +177,43 @@ class OpenAIService(BaseLanguageModel):
             logger.error(f"Error calling OpenAI API: {str(e)}")
             raise
 
-def create_language_service(provider: Literal["deepseek", "openai"] = "deepseek", api_key: Optional[str] = None) -> BaseLanguageModel:
+class GroqService(BaseLanguageModel):
+    """Tencent Hunyuan Implementation"""
+    def _initialize_client(self):
+        self.api_key = self.api_key or os.getenv("GROQ_API_KEY")
+        if not self.api_key:
+            logger.error("No Groq API key provided")
+            raise ValueError("GROQ_API_KEY environment variable not set")
+        
+        self.client = OpenAI(api_key=self.api_key, base_url="https://api.groq.com/openai/v1")
+        self.model = "llama-3.1-8b-instant"
+    
+    def call_model(self, prompt: str):
+        messages = [
+            {"role": "system", "content": "You are a staff engineer who is amazing at making deployment ready applications."},
+            {"role": "user", "content": prompt}
+        ]
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=0.3
+            )
+            raw_content = response.choices[0].message.content
+            logger.info(raw_content)
+            return self._extract_json(raw_content)
+        except Exception as e:
+            logger.error(f"Error calling Groq API: {str(e)}")
+            raise
+        
+
+
+def create_language_service(provider: Literal["deepseek", "openai", "groq"] = "deepseek", api_key: Optional[str] = None) -> BaseLanguageModel:
     """Factory function to create the appropriate language model service"""
     if provider == "deepseek":
         return DeepseekService(api_key)
     elif provider == "openai":
         return OpenAIService(api_key)
+    elif provider == "groq":
+        return GroqService()

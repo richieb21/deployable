@@ -7,7 +7,6 @@ import os
 import urllib3
 import base64
 
-# Suppress the LibreSSL warning
 urllib3.disable_warnings(urllib3.exceptions.NotOpenSSLWarning)
 
 logger = getLogger(__name__)
@@ -22,17 +21,91 @@ class GithubService:
         # Cache for repository metadata to avoid redundant API calls
         self._repo_cache = {}
 
+        # Files to exclude
         self.excluded_files = [
             'package.json',
             'package-lock.json',
             'yarn.lock',
-            'node_modules',
             '.DS_Store',
             'Thumbs.db',
             '.gitignore',
             '.gitattributes',
             'LICENSE',
             'LICENCE',
+            'README.md',
+            '.env',
+            '.env.example',
+            '.env.local',
+            '.env.development',
+            '.env.test',
+            '.env.production'
+        ]
+
+        # Directories to exclude (will exclude all contents within these directories)
+        self.excluded_dirs = [
+            'node_modules',
+            '.git',
+            'dist',
+            'build',
+            'coverage',
+            '__pycache__',
+            '.pytest_cache',
+            '.next',
+            '.venv',
+            'venv',
+            'env',
+            '.idea',
+            '.vscode'
+        ]
+
+        # File extensions to exclude
+        self.excluded_extensions = [
+            # Documentation and text files
+            '.txt',
+            '.md',
+            '.rst',
+            '.pdf',
+            '.doc',
+            '.docx',
+            
+            # Log files
+            '.log',
+            
+            # Image files
+            '.png',
+            '.jpg',
+            '.jpeg',
+            '.gif',
+            '.ico',
+            '.svg',
+            
+            # Data files
+            '.csv',
+            '.xls',
+            '.xlsx',
+            '.json',  # Exclude JSON files except specific config files we need
+            
+            # Cache and compiled files
+            '.pyc',
+            '.pyo',
+            '.pyd',
+            '.cache',
+            
+            # IDE and editor files
+            '.swp',
+            '.swo',
+            '.swn',
+            '.bak',
+            
+            # OS-specific files
+            '.DS_Store',
+            'Thumbs.db',
+            
+            # Other binary files
+            '.zip',
+            '.tar',
+            '.gz',
+            '.rar'
         ]
 
         if not self.github_token:
@@ -184,9 +257,50 @@ class GithubService:
             
         return repo_info, tree_data.get("tree", [])
         
+    def _should_exclude_path(self, path: str) -> bool:
+        """
+        Check if a file path should be excluded based on excluded directories, files, and extensions.
+        
+        Args:
+            path: File path to check
+            
+        Returns:
+            True if path should be excluded, False otherwise
+        """
+        path_parts = path.split('/')
+        
+        for part in path_parts:
+            if part in self.excluded_dirs:
+                return True
+            
+        filename = path_parts[-1]
+        if filename in self.excluded_files:
+            return True
+            
+        # Check file extensions
+        if '.' in filename:
+            extension = '.' + filename.split('.')[-1].lower()
+            if extension in self.excluded_extensions:
+                # Special cases: Allow certain config files even if their extension is excluded
+                important_config_files = {
+                    'package.json',
+                    'tsconfig.json',
+                    'composer.json',
+                    'angular.json',
+                    'next.config.js',
+                    'webpack.config.js',
+                    'babel.config.js',
+                    'jest.config.js'
+                }
+                if filename not in important_config_files:
+                    return True
+            
+        return False
+
     def list_filenames(self, repo_url: str) -> List[str]:
         """
         Given a public GitHub repo URL, return a list of all filenames (full paths).
+        Excludes files in excluded directories, excluded files, and files with excluded extensions.
         
         Args:
             repo_url: GitHub repository URL
@@ -199,7 +313,7 @@ class GithubService:
         return [
             item["path"]
             for item in tree_items
-            if item["type"] == "blob" and item["path"].split("/")[-1] not in self.excluded_files
+            if item["type"] == "blob" and not self._should_exclude_path(item["path"])
         ]
     
     def _get_file_contents(self, owner: str, repo: str, path: str) -> Optional[Dict[str, str]]:
@@ -271,9 +385,3 @@ class GithubService:
                 contents.append(file_content)
         
         return contents
-
-
-# Only run test code when the script is executed directly
-if __name__ == "__main__":
-    gh = GithubService()
-    print(gh.list_filenames("https://github.com/steventanyang/market_loo"))

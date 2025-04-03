@@ -7,9 +7,9 @@ from datetime import datetime
 import threading
 import time
 
-from app.models.schemas import AnalysisRequest, AnalysisResponse, Recommendation, IdentifyKeyFilesRequest, IdentifyKeyFilesResponse
+from app.models.schemas import AnalysisRequest, AnalysisResponse, IdentifyKeyFilesRequest, IdentifyKeyFilesResponse
 from app.services.github import GithubService
-from app.services.LLM_service import DeepseekService, OpenAIService
+from app.services.LLM_service import create_language_service
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +20,7 @@ router = APIRouter(
 )
 
 github_service = GithubService()
-deepseek_service = DeepseekService()
-openai_service = OpenAIService()
+CURRENT_LLM_PROIVDER = "deepseek"
 
 recommendations_lock = threading.Lock()
 
@@ -143,14 +142,14 @@ class DeepseekClientPool:
     
     def _initialize_clients(self):
         for _ in range(self.size):
-            self.clients.append(DeepseekService(api_key=self.api_key))
+            self.clients.append(create_language_service(CURRENT_LLM_PROIVDER))
         logger.info(f"Initialized pool of {self.size} DeepSeek clients")
     
     def get_client(self):
         with self.lock:
             if not self.clients:
                 # If pool is empty, create a new client
-                return DeepseekService(api_key=self.api_key)
+                return create_language_service()
             return self.clients.pop()
     
     def return_client(self, client):
@@ -174,13 +173,15 @@ async def analyze_repository(request: AnalysisRequest):
         logger.info(f"Listed {len(all_files)} files in {list_files_duration:.2f} seconds")
         
         # identify important files to analyze
-        deepseek_service = DeepseekService() 
+        deepseek_service = create_language_service(CURRENT_LLM_PROIVDER) 
         
         identify_start = time.time()
+        logger.info(all_files)
         files_prompt = deepseek_service.identify_files_prompt(all_files)
         
         model_start = time.time()
         files_response = deepseek_service.call_model(files_prompt)
+        logger.info(files_response)
         model_duration = time.time() - model_start
         logger.info(f"Files identification model call took {model_duration:.2f} seconds")
         
@@ -212,7 +213,7 @@ async def analyze_repository(request: AnalysisRequest):
         
         # Create a pool of DeepSeek clients
         api_key = request.api_key if hasattr(request, 'api_key') else None
-        max_workers = min(len(file_chunks), 10)  
+        max_workers = max(1, min(len(file_chunks), 10))  # Ensure at least 1 worker
         client_pool = DeepseekClientPool(size=max_workers, api_key=api_key)
         
         # Use a thread pool executor for parallel processing
@@ -267,8 +268,18 @@ async def identify_key_files(request: IdentifyKeyFilesRequest):
     repo_url = str(request.repo_url)
     all_files = github_service.list_filenames(repo_url)
 
-    prompt = openai_service.identify_files_prompt(all_files)
-    key_files = json.loads(openai_service.call_model(prompt))
+    openai_service = create_language_service("openai")
+
+    prompt_identify = openai_service.identify_files_prompt(all_files)
+    prompt_tech_stack = openai_service.get_tech_stack_prompt(all_files)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        future_identify = executor.submit(openai_service.call_model, prompt_identify)
+        future_tech_stack = executor.submit(openai_service.call_model, prompt_tech_stack)
+
+        # Get results from both futures
+        key_files = json.loads(future_identify.result())
+        tech_stack = json.loads(future_tech_stack.result())
 
     logger.info(type(key_files))
     logger.info(type(all_files))
@@ -276,5 +287,6 @@ async def identify_key_files(request: IdentifyKeyFilesRequest):
 
     return IdentifyKeyFilesResponse(
         all_files=all_files,
-        key_files=key_files
+        key_files=key_files,
+        tech_stack=tech_stack
     )
