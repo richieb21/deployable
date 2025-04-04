@@ -8,9 +8,12 @@ import threading
 import time
 
 from app.models.schemas import AnalysisRequest, AnalysisResponse, IdentifyKeyFilesRequest, IdentifyKeyFilesResponse
-from backend.app.services.github_service import GithubService
+from app.services.github_service import GithubService
 from app.services.LLM_service import create_language_service
 from app.services.multithreading_service import LLMClientPool
+from app.core.dependencies import get_redis_client
+
+from redis import Redis
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +25,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-github_service = GithubService()
 CURRENT_LLM_PROIVDER = "groq"
-
 recommendations_lock = threading.Lock()
 
 def analyze_file_batch(files_batch: List[Dict[str, str]], client_pool, batch_index: int) -> List[Dict[str, Any]]:
@@ -135,12 +136,17 @@ def chunk_files(files: List[Dict[str, str]], chunk_size: int = 5) -> List[List[D
     return chunks
 
 @router.post("/", response_model=AnalysisResponse)
-async def analyze_repository(request: AnalysisRequest):
+async def analyze_repository(
+    request: AnalysisRequest,
+    redis_client: Redis = Depends(get_redis_client)
+):
     """
-    Analyze a GitHub repository for deployment readiness using multiple parallel DeepSeek clients.
+    Analyze a GitHub repository for deployment readiness using multiple parallel LLM clients.
     """
     overall_start_time = time.time()
     logger.info(f"Starting analysis for repository: {request.repo_url}")
+
+    github_service = GithubService(redis_client=redis_client)
     
     try:
         repo_url = str(request.repo_url)
@@ -151,14 +157,14 @@ async def analyze_repository(request: AnalysisRequest):
         logger.info(f"Listed {len(all_files)} files in {list_files_duration:.2f} seconds")
         
         # identify important files to analyze
-        deepseek_service = create_language_service(CURRENT_LLM_PROIVDER) 
+        llm_service = create_language_service(CURRENT_LLM_PROIVDER) 
         
         identify_start = time.time()
         logger.info(all_files)
-        files_prompt = deepseek_service.identify_files_prompt(all_files)
+        files_prompt = llm_service.identify_files_prompt(all_files)
         
         model_start = time.time()
-        files_response = deepseek_service.call_model(files_prompt)
+        files_response = llm_service.call_model(files_prompt)
         logger.info(files_response)
         model_duration = time.time() - model_start
         logger.info(f"Files identification model call took {model_duration:.2f} seconds")
@@ -238,11 +244,16 @@ async def analyze_repository(request: AnalysisRequest):
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 @router.post("/key-files", response_model=IdentifyKeyFilesResponse)
-async def identify_key_files(request: IdentifyKeyFilesRequest):
+async def identify_key_files(
+    request: IdentifyKeyFilesRequest,
+    redis_client: Redis = Depends(get_redis_client)
+):
     """
     Identify all files and key files within a Github Repository
     """
     repo_url = str(request.repo_url)
+
+    github_service = GithubService(redis_client=redis_client)
     all_files = github_service.list_filenames(repo_url)
 
     llm = create_language_service("claude")

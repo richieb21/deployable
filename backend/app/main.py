@@ -9,7 +9,7 @@ import warnings
 setup_logging("INFO")
 
 app = FastAPI(
-    title="Deployment Readiness Analyzer",
+    title="deployable API",
     description="API for analyzing GitHub repositories for deployment readiness",
     version="0.1.0",
 )

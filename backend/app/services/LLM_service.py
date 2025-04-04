@@ -89,6 +89,7 @@ class BaseLanguageModel(ABC):
         2. Only include technologies that are definitively present in the files
         3. List maximum 5 most important technologies per category
         4. Focus on production dependencies, ignore dev dependencies
+        5. Provide ONLY THE JSON, no justifications
         """
         return prompt
 

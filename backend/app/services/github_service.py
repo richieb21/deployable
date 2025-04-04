@@ -7,6 +7,7 @@ import os
 import urllib3
 import base64
 from functools import lru_cache
+import redis
 
 urllib3.disable_warnings(urllib3.exceptions.NotOpenSSLWarning)
 
@@ -15,10 +16,11 @@ logger = getLogger(__name__)
 load_dotenv()
 
 class GithubService:
-    def __init__(self, pat: Optional[str] = None):
+    def __init__(self, pat: Optional[str] = None, redis_client=None):
         # use environment personal access token, fallback will be unauthenticated requests
         self.github_token = pat or os.getenv("GITHUB_PAT")
         self.base_url = "https://api.github.com"
+        self.redis_client = redis_client
 
         # Files to exclude
         self.excluded_files = [
@@ -155,18 +157,12 @@ class GithubService:
         Returns:
             Dictionary with repository information or None if not found
         """
-        cache_key = f"{owner}/{repo_name}"
-        
-        # Return cached info if available
-        if cache_key in self._repo_cache:
-            return self._repo_cache[cache_key]
         
         api_url = f"{self.base_url}/repos/{owner}/{repo_name}"
         response = requests.get(api_url, headers=self._get_headers())
 
         if response.status_code == 200:
             repo_info = response.json()
-            self._repo_cache[cache_key] = repo_info
             return repo_info
         
         logger.error(f"Unable to get repository {owner}/{repo_name}. Status code: {response.status_code}")
@@ -316,6 +312,23 @@ class GithubService:
             if item["type"] == "blob" and not self._should_exclude_path(item["path"])
         ]
     
+    def _get_cache_key(self, owner, repo, path):
+        """Given an owner and repo, get their cache key"""
+
+        # ideally, we should do a hash of owner:repo:path
+        return f"{owner}:{repo}:{path}"
+
+    def _cache_file_contents(self, owner: str, repo: str, path: str, contents: str):
+        """Store file contents of a repositories files into the Redis cache"""
+        cache_key = self._get_cache_key(owner, repo, path)
+        self.redis_client.set(cache_key, contents)
+
+    def _get_cache_contents(self, owner: str, repo: str, path: str):
+        """Retrieve file contents of a repositories files into the Redis cache"""
+
+        cache_key = self._get_cache_key(owner, repo, path)
+        return self.redis_client.get(cache_key)
+    
     def _get_file_contents(self, owner: str, repo: str, path: str) -> Optional[Dict[str, str]]:
         """
         Get the contents of a file from GitHub.
@@ -328,15 +341,23 @@ class GithubService:
         Returns:
             Dictionary with file path and content or None if not found
         """
+
+        cache_contents = self._get_cache_contents(owner, repo, path)
+
+        if cache_contents:
+            return cache_contents
+
         api_url = f"{self.base_url}/repos/{owner}/{repo}/contents/{path}"
         response = requests.get(api_url, headers=self._get_headers())
 
         if response.status_code == 200:
             data = response.json()
             if data.get('encoding') == "base64":
+                content = base64.b64decode(data["content"]).decode('utf-8')
+                self._cache_file_contents(owner, repo, path, content)
                 return {
                     "path": path,
-                    "content": base64.b64decode(data["content"]).decode('utf-8')
+                    "content": content
                 }
         
         logger.error(f"Unable to get file contents for {path}. Status code: {response.status_code}")
