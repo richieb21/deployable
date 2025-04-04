@@ -4,6 +4,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+"""Cache Expiration"""
+TTL_EXPIRATION=3*60*60
+
 """Initialize the connection pool"""
 redis_client = redis.ConnectionPool(
     host=settings.REDIS_HOST,

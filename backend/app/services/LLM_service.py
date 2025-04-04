@@ -1,11 +1,13 @@
 import os
 from openai import OpenAI
 import anthropic
-from typing import List, Dict, Any, Optional, Literal
+from typing import List, Dict, Optional, Literal
 from dotenv import load_dotenv
 from logging import getLogger
 import re
 from abc import ABC, abstractmethod
+import hashlib
+from app.core.dependencies import TTL_EXPIRATION
 
 logger = getLogger(__name__)
 
@@ -49,6 +51,23 @@ class BaseLanguageModel(ABC):
     def call_model(self, prompt: str) -> str:
         """Call the language model with a prompt"""
         pass
+    
+    def call_model_with_cache(self, prompt: str, redis_client=None):
+
+        if not redis_client:
+            return self.call_model(prompt)
+
+        prompt_hash = hashlib.sha256(prompt.encode()).hexdigest()
+        cache_key = f"llm:{self.__class__.__name__}:{self.model}:{prompt_hash}"
+
+        cached_response = redis_client.get(cache_key)
+        if cached_response:
+            return cached_response.decode('utf-8')
+        
+        response = self.call_model(prompt)
+
+        redis_client.set(cache_key, response, ex=TTL_EXPIRATION) 
+        return response
 
     def identify_files_prompt(self, files):
         """Create a prompt to identify important deployment files"""

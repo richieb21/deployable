@@ -7,7 +7,7 @@ import os
 import urllib3
 import base64
 from functools import lru_cache
-import redis
+from app.core.dependencies import TTL_EXPIRATION
 
 urllib3.disable_warnings(urllib3.exceptions.NotOpenSSLWarning)
 
@@ -321,7 +321,7 @@ class GithubService:
     def _cache_file_contents(self, owner: str, repo: str, path: str, contents: str):
         """Store file contents of a repositories files into the Redis cache"""
         cache_key = self._get_cache_key(owner, repo, path)
-        self.redis_client.set(cache_key, contents)
+        self.redis_client.set(cache_key, contents, ex=TTL_EXPIRATION)
 
     def _get_cache_contents(self, owner: str, repo: str, path: str):
         """Retrieve file contents of a repositories files into the Redis cache"""
