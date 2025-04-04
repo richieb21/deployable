@@ -5,7 +5,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 """Cache Expiration"""
-TTL_EXPIRATION = 3*60*60  # 3 hours
+TTL_EXPIRATION = 30*60  # 30 minutes, honestly idk what to make this lol. I assume people don't make many changes in 30 minutes before they check again?
 
 """Initialize the connection pool"""
 try:

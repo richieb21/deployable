@@ -62,7 +62,7 @@ class BaseLanguageModel(ABC):
 
         cached_response = redis_client.get(cache_key)
         if cached_response:
-            return cached_response.decode('utf-8')
+            return cached_response
         
         response = self.call_model(prompt)
 
