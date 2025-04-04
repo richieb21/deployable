@@ -2,12 +2,14 @@ from dotenv import load_dotenv
 from logging import getLogger
 from urllib.parse import urlparse
 from typing import Optional, Dict, Any, List, Tuple
+import redis.exceptions
 import requests
 import os
 import urllib3
 import base64
 from functools import lru_cache
 from app.core.dependencies import TTL_EXPIRATION
+import redis
 
 urllib3.disable_warnings(urllib3.exceptions.NotOpenSSLWarning)
 
@@ -320,14 +322,21 @@ class GithubService:
 
     def _cache_file_contents(self, owner: str, repo: str, path: str, contents: str):
         """Store file contents of a repositories files into the Redis cache"""
-        cache_key = self._get_cache_key(owner, repo, path)
-        self.redis_client.set(cache_key, contents, ex=TTL_EXPIRATION)
+        try:
+            cache_key = self._get_cache_key(owner, repo, path)
+            self.redis_client.set(cache_key, contents, ex=TTL_EXPIRATION)
+        except redis.exceptions.ConnectionError:
+            logger.warning("Redis connection failed - caching disabled")
+            pass
 
     def _get_cache_contents(self, owner: str, repo: str, path: str):
         """Retrieve file contents of a repositories files into the Redis cache"""
-
-        cache_key = self._get_cache_key(owner, repo, path)
-        return self.redis_client.get(cache_key)
+        try:
+            cache_key = self._get_cache_key(owner, repo, path)
+            return self.redis_client.get(cache_key)
+        except redis.exceptions.ConnectionError:
+            logger.warning("Redis connection failed - caching disabled")
+            pass
     
     def _get_file_contents(self, owner: str, repo: str, path: str) -> Optional[Dict[str, str]]:
         """

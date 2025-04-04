@@ -262,8 +262,8 @@ async def identify_key_files(
     prompt_tech_stack = llm.get_tech_stack_prompt(all_files)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        future_identify = executor.submit(llm.call_model, prompt_identify)
-        future_tech_stack = executor.submit(llm.call_model, prompt_tech_stack)
+        future_identify = executor.submit(llm.call_model_with_cache, prompt_identify, redis_client)
+        future_tech_stack = executor.submit(llm.call_model_with_cache, prompt_tech_stack, redis_client)
 
         # Get results from both futures
         key_files = json.loads(future_identify.result())
