@@ -14,7 +14,13 @@ type StackCategory = "frontend" | "backend" | "infra";
 
 export const ImportantFiles = ({ key_files }: ImportantFilesProps) => {
   const [visibleSections, setVisibleSections] = useState<StackCategory[]>([]);
-  const [visibleFiles, setVisibleFiles] = useState<string[]>([]);
+  const [visibleFiles, setVisibleFiles] = useState<
+    Record<StackCategory, string[]>
+  >({
+    frontend: [],
+    backend: [],
+    infra: [],
+  });
 
   useEffect(() => {
     const sections: StackCategory[] = ["frontend", "backend", "infra"];
@@ -33,17 +39,20 @@ export const ImportantFiles = ({ key_files }: ImportantFilesProps) => {
 
     key_files[lastVisibleSection].forEach((file, index) => {
       setTimeout(() => {
-        setVisibleFiles((prev) => [...prev, file]);
+        setVisibleFiles((prev) => ({
+          ...prev,
+          [lastVisibleSection]: [...prev[lastVisibleSection], file],
+        }));
       }, 100 * (index + 1));
     });
   }, [visibleSections, key_files]);
 
-  const renderFiles = (files: string[]) => {
+  const renderFiles = (files: string[], section: StackCategory) => {
     return files.map((file) => (
       <div
         key={file}
         className={`transform transition-all duration-300 ${
-          visibleFiles.includes(file)
+          visibleFiles[section].includes(file)
             ? "translate-y-0 opacity-100"
             : "translate-y-[-8px] opacity-0"
         }`}
@@ -68,7 +77,7 @@ export const ImportantFiles = ({ key_files }: ImportantFilesProps) => {
           {title.charAt(0).toUpperCase() + title.slice(1)}
         </h2>
         <div className="pl-4 border-l-2 border-gray-200 dark:border-gray-700 space-y-2">
-          {renderFiles(files)}
+          {renderFiles(files, title)}
         </div>
       </div>
     );

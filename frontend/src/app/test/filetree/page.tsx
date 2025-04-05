@@ -54,12 +54,24 @@ const sampleFiles = [
 
 const key_files = {
   frontend: [
-    "client/index.html",
-    "client/src/main.jsx",
-    "client/vite.config.js",
+    "frontend/next.config.ts",
+    "frontend/src/app/api/analysis/route.ts",
+    "frontend/src/app/layout.tsx",
+    "frontend/src/app/page.tsx",
   ],
-  backend: ["server/.env", "server/models/Conversation.js", "server/server.js"],
-  infra: ["client/index.html", "client/src/main.jsx", "client/vite.config.js"],
+  backend: [
+    "backend/app/__init__.py",
+    "backend/app/api/endpoints/analysis.py",
+    "backend/app/api/endpoints/github.py",
+    "backend/app/core/config.py",
+    "backend/app/core/logging_config.py",
+    "backend/app/main.py",
+    "backend/app/models/schemas.py",
+    "backend/app/services/LLM_service.py",
+    "backend/app/services/github_service.py",
+    "backend/requirements.txt",
+  ],
+  infra: [],
 };
 
 export default function FileTreeTestPage() {
