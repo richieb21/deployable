@@ -25,7 +25,7 @@ export default function StatsPage() {
   const repoName = repoUrl.split("/").slice(-2).join("/");
 
   // Fetch analysis data with caching
-  const { data, loading, error } = useAnalysis(repoUrl);
+  const { data, loading, error, refreshAnalysis } = useAnalysis(repoUrl);
 
   // Load completed issues from localStorage on mount
   useEffect(() => {
@@ -85,7 +85,7 @@ export default function StatsPage() {
   };
 
   return (
-    <StatsLayout repoName={repoName}>
+    <StatsLayout repoName={repoName} onRefresh={refreshAnalysis}>
       {/* Floating progress bar */}
       <AnimatePresence>
         {showProgressBar && (
