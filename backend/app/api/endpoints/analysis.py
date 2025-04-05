@@ -27,31 +27,15 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-CURRENT_LLM_PROIVDER = "deepseek"
+CURRENT_LLM_PROIVDER = "groq"
 recommendations_lock = threading.Lock()
 
 def analyze_file_batch(files_batch: List[Dict[str, str]], client_pool, batch_index: int, analysis_id: str) -> List[Dict[str, Any]]:
     """
     Analyze a batch of files using a client from the pool.
-    
-    Args:
-        files_batch: List of file content dictionaries to analyze
-        client_pool: Pool of DeepSeek clients
-        batch_index: Index of the current batch for logging
-        
-    Returns:
-        List of recommendations
     """
-    
     try:
         client = client_pool.get_client()
-
-        # get the analysis queue to add/update
-        queue: asyncio.Queue = analysis_streams.get(analysis_id, None)
-
-        if not queue:
-            logger.error(f"No queue found for analysis_id: {analysis_id}")
-            return []
         
         logger.info(f"Batch {batch_index}: Starting analysis of {len(files_batch)} files")
         
@@ -66,65 +50,16 @@ def analyze_file_batch(files_batch: List[Dict[str, str]], client_pool, batch_ind
         logger.info(f"Batch {batch_index}: Model API call took {model_duration:.2f} seconds")
         
         try:
-            parse_start_time = time.time()
             recommendations = json.loads(analysis_response)
-
-            # Log before creating progress event
-            logger.info(f"Batch {batch_index}: Creating progress event")
-            
-            progress_event = {
-                "type": "PROGRESS",
-                "chunk_index": batch_index,
-                "files": [file.get('file_path', 'unknown') for file in files_batch],
-                "recommendations_count": len(recommendations)
-            }
-            
-            logger.info(f"Batch {batch_index}: Progress event created: {progress_event}")
-
-            # Create a new event loop for this thread
-            try:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                
-                logger.info(f"Batch {batch_index}: Attempting to put event in queue")
-                loop.run_until_complete(queue.put(progress_event))
-                logger.info(f"Batch {batch_index}: Successfully put event in queue")
-                
-            except Exception as e:
-                logger.error(f"Batch {batch_index}: Error putting event in queue: {str(e)}")
-            finally:
-                loop.close()
-                logger.info(f"Batch {batch_index}: Event loop closed")
-
-            parse_duration = time.time() - parse_start_time
-            logger.info(f"Batch {batch_index}: Complete. Found {len(recommendations)} recommendations")
-            
-            # Return the client to the pool
-            client_pool.return_client(client)
             return recommendations
+            
         except json.JSONDecodeError as e:
             logger.error(f"Batch {batch_index}: JSON parse error: {str(e)}")
-            logger.error(f"Batch {batch_index}: Raw response snippet: {analysis_response[:200]}...")
+            return []
             
-            # Return the client to the pool
-            client_pool.return_client(client)
-            return [{
-                "title": "JSON Parsing Error",
-                "description": f"Failed to parse model response: {str(e)}. This is likely due to an invalid JSON format returned by the model.",
-                "file_path": "N/A",
-                "severity": "LOW",
-                "category": "INFRASTRUCTURE",
-                "action_items": ["Retry the analysis", "Check model response format"],
-                "code_snippets": {
-                    "before": "N/A",
-                    "after": "N/A"
-                },
-                "references": []
-            }]
-        
     except Exception as e:
-        logger.error(f"Batch {batch_index}: Error in file batch analysis: {str(e)}")
-        return []  # Return empty list instead of failing the entire process
+        logger.error(f"Batch {batch_index}: Error in batch analysis: {str(e)}")
+        return []
 
 def chunk_files(files: List[Dict[str, str]], chunk_size: int = 5) -> List[List[Dict[str, str]]]:
     """
@@ -165,6 +100,27 @@ def chunk_files(files: List[Dict[str, str]], chunk_size: int = 5) -> List[List[D
     
     logger.info(f"Created {len(chunks)} chunks with up to {chunk_size} files per chunk")
     return chunks
+
+async def process_batch(executor, chunk, client_pool, chunk_index, analysis_id, queue):
+    future = executor.submit(analyze_file_batch, chunk, client_pool, chunk_index, analysis_id)
+    try:
+        chunk_recommendations = await asyncio.wrap_future(future)
+        
+        # Create and send progress event
+        progress_event = {
+            "type": "PROGRESS",
+            "chunk_index": chunk_index,
+            "files": [file.get('path', 'unknown') for file in chunk],
+            "recommendations_count": len(chunk_recommendations)
+        }
+        
+        # Now we can properly await the queue put
+        await queue.put(progress_event)
+        
+        return chunk_index, chunk_recommendations
+    except Exception as e:
+        logger.error(f"Error processing chunk {chunk_index}: {str(e)}")
+        return chunk_index, []
 
 @router.post("/", response_model=AnalysisResponse)
 async def analyze_repository(
@@ -233,26 +189,21 @@ async def analyze_repository(
         # Use a thread pool executor for parallel processing
         analysis_start = time.time()
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_chunk = {
-                executor.submit(analyze_file_batch, chunk, client_pool, i, request.analysis_id): i 
-                for i, chunk in enumerate(file_chunks)
-            }
+            queue = analysis_streams.get(request.analysis_id)
+            tasks = []
             
-            completed = 0
-            for future in concurrent.futures.as_completed(future_to_chunk):
-                chunk_index = future_to_chunk[future]
-                try:
-                    chunk_recommendations = future.result()
-                    completed += 1
-                    progress_pct = (completed / len(file_chunks)) * 100
-                    logger.info(f"Chunk {chunk_index} processed with {len(chunk_recommendations)} recommendations ({completed}/{len(file_chunks)} complete, {progress_pct:.1f}%)")
-                    
-                    # Locking to avoid race conditions
-                    with recommendations_lock:
-                        all_recommendations.extend(chunk_recommendations)
-                        
-                except Exception as e:
-                    logger.error(f"Error processing chunk {chunk_index}: {str(e)}")
+            # Create async tasks for each chunk
+            for i, chunk in enumerate(file_chunks):
+                task = process_batch(executor, chunk, client_pool, i, request.analysis_id, queue)
+                tasks.append(task)
+            
+            # Wait for all tasks to complete
+            results = await asyncio.gather(*tasks)
+            
+            # Process results
+            for chunk_index, chunk_recommendations in results:
+                with recommendations_lock:
+                    all_recommendations.extend(chunk_recommendations)
         
         analysis_duration = time.time() - analysis_start
         logger.info(f"All chunks processed in {analysis_duration:.2f} seconds")
@@ -260,12 +211,6 @@ async def analyze_repository(
         logger.info(f"Analysis complete. Found {len(all_recommendations)} recommendations")
         overall_duration = time.time() - overall_start_time
         logger.info(f"Total analysis completed in {overall_duration:.2f} seconds")
-
-        queue: asyncio.Queue = analysis_streams.get(request.analysis_id, None)
-
-        if not queue:
-            logger.error(f"Error completing the following stream with id: {request.analysis_id}")
-            return []
 
         await queue.put({
             "type" : "COMPLETE",

@@ -5,6 +5,7 @@ from uuid import uuid4
 import asyncio
 import json
 import logging
+from datetime import datetime
 
 router = APIRouter(
     prefix="/stream",
@@ -36,6 +37,9 @@ async def event_generator(analysis_id: str):
                 if event_type not in AnalysisEventType.__members__:
                     logger.error(f"Invalid event type: {event_type}")
                     continue
+
+                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+                logger.info(f"[{current_time}] EVENT RECEIVED: {event_type}")
                 
                 # Important: Format must be "data: {json}\n\n"
                 if event_type == AnalysisEventType.PROGRESS:
