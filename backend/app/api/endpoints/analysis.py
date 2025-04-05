@@ -81,11 +81,9 @@ def chunk_files(files: List[Dict[str, str]], chunk_size: int = 5) -> List[List[D
             grouped_files[ext] = []
         grouped_files[ext].append(file)
     
-    # Create chunks with similar files when possible
     chunks = []
     remaining_files = []
     
-    # First create complete chunks of similar files
     for ext, file_group in grouped_files.items():
         for i in range(0, len(file_group), chunk_size):
             chunk = file_group[i:i + chunk_size]
@@ -102,11 +100,14 @@ def chunk_files(files: List[Dict[str, str]], chunk_size: int = 5) -> List[List[D
     return chunks
 
 async def process_batch(executor, chunk, client_pool, chunk_index, analysis_id, queue):
+    """
+    Takes a future from a thread executor and turns it into an asynchronous future, allowing 
+    asynchronous functions (queuing events) to be ran concurrently
+    """
     future = executor.submit(analyze_file_batch, chunk, client_pool, chunk_index, analysis_id)
     try:
         chunk_recommendations = await asyncio.wrap_future(future)
         
-        # Create and send progress event
         progress_event = {
             "type": "PROGRESS",
             "chunk_index": chunk_index,
@@ -114,7 +115,6 @@ async def process_batch(executor, chunk, client_pool, chunk_index, analysis_id, 
             "recommendations_count": len(chunk_recommendations)
         }
         
-        # Now we can properly await the queue put
         await queue.put(progress_event)
         
         return chunk_index, chunk_recommendations
@@ -161,9 +161,6 @@ async def analyze_repository(
             identify_duration = time.time() - identify_start
             logger.info(f"Identified important files in {identify_duration:.2f} seconds")
             
-            # Count files by category
-            file_counts = {category: len(files) for category, files in important_files.items()}
-            logger.info(f"File counts by category: {file_counts}")
         except json.JSONDecodeError:
             logger.error(f"Failed to parse important files response: {files_response}")
             important_files = {"frontend": [], "backend": [], "infra": []}
@@ -183,10 +180,9 @@ async def analyze_repository(
         all_recommendations = []
         
         # Create a pool of LLM clients
-        max_workers = max(1, min(len(file_chunks), 10))  # Ensure at least 1 worker
+        max_workers = max(1, min(len(file_chunks), 10)) 
         client_pool = LLMClientPool(size=max_workers, llm_provider=CURRENT_LLM_PROIVDER)
         
-        # Use a thread pool executor for parallel processing
         analysis_start = time.time()
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             queue = analysis_streams.get(request.analysis_id)
@@ -199,9 +195,7 @@ async def analyze_repository(
             
             # Wait for all tasks to complete
             results = await asyncio.gather(*tasks)
-            
-            # Process results
-            for chunk_index, chunk_recommendations in results:
+            for _, chunk_recommendations in results:
                 with recommendations_lock:
                     all_recommendations.extend(chunk_recommendations)
         
