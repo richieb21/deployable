@@ -41,3 +41,20 @@ export interface AnalysisResponse {
   recommendations: Recommendation[];
   analysis_timestamp: string;
 }
+
+export interface CreateIssueRequest {
+  owner: string;
+  repo: string;
+  title: string;
+  body: string;
+  labels?: string[];
+  assignees?: string[];
+}
+
+export interface IssueResponse {
+  url: string;
+  html_url: string;
+  number: number;
+  title: string;
+  state: string;
+}

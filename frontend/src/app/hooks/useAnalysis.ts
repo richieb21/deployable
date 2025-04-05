@@ -17,10 +17,10 @@ export function useAnalysis(repoUrl: string) {
 
       // Create a cache key based on the repo URL
       const cacheKey = `${CACHE_KEY_PREFIX}${repoUrl}`;
-      
+
       // Check if we have cached results
       const cachedData = localStorage.getItem(cacheKey);
-      
+
       if (cachedData) {
         try {
           const parsedData = JSON.parse(cachedData);
@@ -50,14 +50,14 @@ export function useAnalysis(repoUrl: string) {
         }
 
         const result = await response.json();
-        
+
         // Cache the results
         try {
           localStorage.setItem(cacheKey, JSON.stringify(result));
         } catch (err) {
           console.warn("Error caching analysis results:", err);
         }
-        
+
         setData(result);
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
@@ -74,7 +74,10 @@ export function useAnalysis(repoUrl: string) {
     // Clear the cache for this repo
     const cacheKey = `${CACHE_KEY_PREFIX}${repoUrl}`;
     localStorage.removeItem(cacheKey);
-    
+
+    // Also clear created issues when refreshing
+    localStorage.removeItem("createdIssues");
+
     setLoading(true);
     try {
       const response = await fetch("/api/analysis", {
@@ -90,14 +93,14 @@ export function useAnalysis(repoUrl: string) {
       }
 
       const result = await response.json();
-      
+
       // Cache the new results
       try {
         localStorage.setItem(cacheKey, JSON.stringify(result));
       } catch (err) {
         console.warn("Error caching analysis results:", err);
       }
-      
+
       setData(result);
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));

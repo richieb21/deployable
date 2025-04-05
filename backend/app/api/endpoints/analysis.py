@@ -72,14 +72,15 @@ def chunk_files(files: List[Dict[str, str]], chunk_size: int = 5) -> List[List[D
     Returns:
         List of file chunks
     """
+    return [files[i:i + chunk_size] for i in range(0, len(files), chunk_size)]
     # Group similar files together for better analysis
-    grouped_files = {}
-    for file in files:
-        # Get file extension as a grouping key
-        ext = file.get('name', '').split('.')[-1] if '.' in file.get('name', '') else 'unknown'
-        if ext not in grouped_files:
-            grouped_files[ext] = []
-        grouped_files[ext].append(file)
+    # grouped_files = {}
+    # for file in files:
+    #     # Get file extension as a grouping key
+    #     ext = file.get('name', '').split('.')[-1] if '.' in file.get('name', '') else 'unknown'
+    #     if ext not in grouped_files:
+    #         grouped_files[ext] = []
+    #     grouped_files[ext].append(file)
     
     chunks = []
     remaining_files = []
@@ -91,13 +92,13 @@ def chunk_files(files: List[Dict[str, str]], chunk_size: int = 5) -> List[List[D
                 chunks.append(chunk)
             else:
                 remaining_files.extend(chunk)
+
+    # # Then handle any remaining files
+    # for i in range(0, len(remaining_files), chunk_size):
+    #     chunks.append(remaining_files[i:i + chunk_size])
     
-    # Then handle any remaining files
-    for i in range(0, len(remaining_files), chunk_size):
-        chunks.append(remaining_files[i:i + chunk_size])
-    
-    logger.info(f"Created {len(chunks)} chunks with up to {chunk_size} files per chunk")
-    return chunks
+    # logger.info(f"Created {len(chunks)} chunks with up to {chunk_size} files per chunk")
+    # return chunks
 
 async def process_batch(executor, chunk, client_pool, chunk_index, analysis_id, queue):
     """
