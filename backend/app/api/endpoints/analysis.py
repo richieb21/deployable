@@ -6,12 +6,14 @@ import concurrent.futures
 from datetime import datetime
 import threading
 import time
+import asyncio
 
 from app.models.schemas import AnalysisRequest, AnalysisResponse, IdentifyKeyFilesRequest, IdentifyKeyFilesResponse
 from app.services.github_service import GithubService
 from app.services.LLM_service import create_language_service
 from app.services.multithreading_service import LLMClientPool
 from app.core.dependencies import get_redis_client
+from app.api.endpoints.streaming import analysis_streams
 
 from redis import Redis
 
@@ -25,10 +27,10 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-CURRENT_LLM_PROIVDER = "groq"
+CURRENT_LLM_PROIVDER = "deepseek"
 recommendations_lock = threading.Lock()
 
-def analyze_file_batch(files_batch: List[Dict[str, str]], client_pool, batch_index: int) -> List[Dict[str, Any]]:
+def analyze_file_batch(files_batch: List[Dict[str, str]], client_pool, batch_index: int, analysis_id: str) -> List[Dict[str, Any]]:
     """
     Analyze a batch of files using a client from the pool.
     
@@ -40,14 +42,18 @@ def analyze_file_batch(files_batch: List[Dict[str, str]], client_pool, batch_ind
     Returns:
         List of recommendations
     """
-    batch_start_time = time.time()
-    total_content_size = sum(len(file.get('content', '')) for file in files_batch)
     
     try:
-        # Get a client from the pool
         client = client_pool.get_client()
+
+        # get the analysis queue to add/update
+        queue: asyncio.Queue = analysis_streams.get(analysis_id, None)
+
+        if not queue:
+            logger.error(f"No queue found for analysis_id: {analysis_id}")
+            return []
         
-        logger.info(f"Batch {batch_index}: Analyzing {len(files_batch)} files ({total_content_size/1024:.1f} KB)")
+        logger.info(f"Batch {batch_index}: Starting analysis of {len(files_batch)} files")
         
         prompt_start_time = time.time()
         analysis_prompt = client.get_file_analysis_prompt(files_batch)
@@ -62,17 +68,42 @@ def analyze_file_batch(files_batch: List[Dict[str, str]], client_pool, batch_ind
         try:
             parse_start_time = time.time()
             recommendations = json.loads(analysis_response)
-            parse_duration = time.time() - parse_start_time
-            logger.info(f"Batch {batch_index}: JSON parsing took {parse_duration:.2f} seconds")
+
+            # Log before creating progress event
+            logger.info(f"Batch {batch_index}: Creating progress event")
             
-            batch_duration = time.time() - batch_start_time
-            logger.info(f"Batch {batch_index}: Analysis complete, found {len(recommendations)} recommendations in {batch_duration:.2f} seconds")
+            progress_event = {
+                "type": "PROGRESS",
+                "chunk_index": batch_index,
+                "files": [file.get('file_path', 'unknown') for file in files_batch],
+                "recommendations_count": len(recommendations)
+            }
+            
+            logger.info(f"Batch {batch_index}: Progress event created: {progress_event}")
+
+            # Create a new event loop for this thread
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                
+                logger.info(f"Batch {batch_index}: Attempting to put event in queue")
+                loop.run_until_complete(queue.put(progress_event))
+                logger.info(f"Batch {batch_index}: Successfully put event in queue")
+                
+            except Exception as e:
+                logger.error(f"Batch {batch_index}: Error putting event in queue: {str(e)}")
+            finally:
+                loop.close()
+                logger.info(f"Batch {batch_index}: Event loop closed")
+
+            parse_duration = time.time() - parse_start_time
+            logger.info(f"Batch {batch_index}: Complete. Found {len(recommendations)} recommendations")
             
             # Return the client to the pool
             client_pool.return_client(client)
             return recommendations
         except json.JSONDecodeError as e:
-            logger.error(f"Batch {batch_index}: Failed to parse JSON response: {str(e)}")
+            logger.error(f"Batch {batch_index}: JSON parse error: {str(e)}")
             logger.error(f"Batch {batch_index}: Raw response snippet: {analysis_response[:200]}...")
             
             # Return the client to the pool
@@ -203,7 +234,7 @@ async def analyze_repository(
         analysis_start = time.time()
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_chunk = {
-                executor.submit(analyze_file_batch, chunk, client_pool, i): i 
+                executor.submit(analyze_file_batch, chunk, client_pool, i, request.analysis_id): i 
                 for i, chunk in enumerate(file_chunks)
             }
             
@@ -229,6 +260,18 @@ async def analyze_repository(
         logger.info(f"Analysis complete. Found {len(all_recommendations)} recommendations")
         overall_duration = time.time() - overall_start_time
         logger.info(f"Total analysis completed in {overall_duration:.2f} seconds")
+
+        queue: asyncio.Queue = analysis_streams.get(request.analysis_id, None)
+
+        if not queue:
+            logger.error(f"Error completing the following stream with id: {request.analysis_id}")
+            return []
+
+        await queue.put({
+            "type" : "COMPLETE",
+            "recommendations" : all_recommendations,
+            "analysis_timestamp": "test"
+        })
         
         end_time = datetime.now()
         
