@@ -138,12 +138,19 @@ export const FileTree = ({ files, className = "" }: FileTreeProps) => {
     );
   };
 
-  const renderNode = (node: FileNode, level: number = 0) => {
+  const renderNode = (node: FileNode, level: number = 0, index: number = 0) => {
     const { name, path, type } = node;
     const isExpanded = expandedFolders.has(path);
 
     return (
-      <div key={path} style={{ marginLeft: `${level * 8}px` }}>
+      <div
+        key={path}
+        style={{
+          marginLeft: `${level * 8}px`,
+          ...(level === 0 ? { animationDelay: `${index * 50}ms` } : {}),
+        }}
+        className={level === 0 ? "animate-slideDown" : ""}
+      >
         <div
           className="flex items-center space-x-1 py-1 px-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer group"
           onClick={() => type === "directory" && toggleFolder(path)}
@@ -155,7 +162,9 @@ export const FileTree = ({ files, className = "" }: FileTreeProps) => {
         </div>
         {type === "directory" && isExpanded && node.children && (
           <div>
-            {node.children.map((child) => renderNode(child, level + 1))}
+            {node.children.map((child, childIndex) =>
+              renderNode(child, level + 1, index + childIndex)
+            )}
           </div>
         )}
       </div>
@@ -164,7 +173,7 @@ export const FileTree = ({ files, className = "" }: FileTreeProps) => {
 
   return (
     <div className={`font-mono text-sm ${className}`}>
-      {fileTree.map((node) => renderNode(node))}
+      {fileTree.map((node, index) => renderNode(node, 0, index))}
     </div>
   );
 };

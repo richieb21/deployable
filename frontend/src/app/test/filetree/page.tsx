@@ -1,5 +1,6 @@
 "use client";
 
+import { ImportantFiles } from "@/app/components/ImportantFiles";
 import { FileTree } from "../../components/FileTree";
 
 const sampleFiles = [
@@ -51,10 +52,20 @@ const sampleFiles = [
   "tailwind.config.js",
 ];
 
+const key_files = {
+  frontend: [
+    "client/index.html",
+    "client/src/main.jsx",
+    "client/vite.config.js",
+  ],
+  backend: ["server/.env", "server/models/Conversation.js", "server/server.js"],
+  infra: ["client/index.html", "client/src/main.jsx", "client/vite.config.js"],
+};
+
 export default function FileTreeTestPage() {
   return (
     <div className="min-h-screen bg-[#FFFAF5] dark:bg-gray-900 p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-black dark:text-white mb-2">
             FileTree Component Test
@@ -64,11 +75,20 @@ export default function FileTreeTestPage() {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-          <h2 className="text-xl font-semibold text-black dark:text-white mb-4">
-            Repository Structure
-          </h2>
-          <FileTree files={sampleFiles} />
+        <div className="grid grid-cols-2 gap-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-xl font-semibold text-black dark:text-white mb-4">
+              Repository Structure
+            </h2>
+            <FileTree files={sampleFiles} />
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-xl font-semibold text-black dark:text-white mb-4">
+              Important Files
+            </h2>
+            <ImportantFiles key_files={key_files} />
+          </div>
         </div>
       </div>
     </div>
