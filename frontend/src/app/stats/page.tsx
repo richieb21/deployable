@@ -68,20 +68,55 @@ export default function StatsPage() {
   };
 
   const handleSelectAll = () => {
-    const uncompleted =
-      data?.recommendations?.filter(
-        (rec) => !completedIssues[`${rec.title}-${rec.file_path}`]
-      ) || [];
+    if (!data?.recommendations) return;
 
+    // Get all unresolved issues
+    const unresolvedIssues = data.recommendations
+      .filter((rec) => !completedIssues[`${rec.title}-${rec.file_path}`])
+      .map((rec) => `${rec.title}-${rec.file_path}`);
+
+    // If we already have some selected issues, clear the selection
     if (selectedIssues.size > 0) {
       setSelectedIssues(new Set());
       setShowBulkActions(false);
-    } else {
-      setSelectedIssues(
-        new Set(uncompleted.map((rec) => `${rec.title}-${rec.file_path}`))
-      );
+    } else if (unresolvedIssues.length > 0) {
+      // Otherwise, select all unresolved issues
+      setSelectedIssues(new Set(unresolvedIssues));
       setShowBulkActions(true);
     }
+  };
+
+  // Add a new function to handle completing all selected issues
+  const handleCompleteAll = () => {
+    if (selectedIssues.size === 0) return;
+
+    // Create a copy of the current completedIssues
+    const updatedCompletedIssues = { ...completedIssues };
+
+    // Mark all selected issues as completed
+    selectedIssues.forEach((issueId) => {
+      updatedCompletedIssues[issueId] = true;
+    });
+
+    // Update state
+    setCompletedIssues(updatedCompletedIssues);
+
+    // Save to localStorage
+    try {
+      localStorage.setItem(
+        "completedIssues",
+        JSON.stringify(updatedCompletedIssues)
+      );
+    } catch (error) {
+      console.error("Error saving completed issues:", error);
+    }
+
+    // Clear selection and hide bulk actions
+    setSelectedIssues(new Set());
+    setShowBulkActions(false);
+
+    // Set the last changed issue ID to trigger animations
+    changedIssueIdRef.current = "bulk-update";
   };
 
   return (
@@ -158,7 +193,10 @@ export default function StatsPage() {
                     </svg>
                     Create Issues
                   </button>
-                  <button className="flex items-center px-4 py-2 bg-[#2A2D31] text-gray-300 hover:bg-[#353A40] rounded transition-colors">
+                  <button
+                    onClick={handleCompleteAll}
+                    className="flex items-center px-4 py-2 bg-[#2A2D31] text-gray-300 hover:bg-[#353A40] rounded transition-colors"
+                  >
                     <svg
                       className="w-4 h-4 mr-2"
                       fill="none"
@@ -212,6 +250,7 @@ export default function StatsPage() {
           onIssueStatusChange={handleIssueStatusChange}
           selectedIssues={selectedIssues}
           onSelectionChange={setSelectedIssues}
+          completedIssues={completedIssues}
         />
       </div>
     </StatsLayout>

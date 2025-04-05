@@ -162,6 +162,25 @@ const getScoreColor = (score: number): { main: string; gradient: string } => {
   };
 };
 
+// Issue severity levels and their corresponding point impacts
+const SEVERITY_WEIGHTS = {
+  critical: 25,
+  high: 15,
+  medium: 10,
+  low: 5,
+  info: 2,
+};
+
+// Category importance weights (for overall score calculation)
+const CATEGORY_WEIGHTS = {
+  security: 1.2, // Security issues are weighted higher
+  performance: 1.0,
+  efficiency: 0.9, // Combined category for readability, scalability, and cost
+};
+
+// Add type for valid severity levels
+type SeverityLevel = keyof typeof SEVERITY_WEIGHTS;
+
 // Update the component props to include onScoreUpdate
 export const StatsDisplay = ({
   analysisData,
@@ -182,36 +201,24 @@ export const StatsDisplay = ({
       return {
         mainMetric: {
           name: "Overall Score",
-          value: 89,
-          color: "#86EFAC",
-          gradient: "#4ADE80",
+          value: 0,
+          color: "#F87171",
+          gradient: "#EF4444",
         },
         metrics: [
+          { name: "Security", value: 0, color: "#F87171", gradient: "#EF4444" },
           {
-            name: "Readability",
-            value: 19,
+            name: "Performance",
+            value: 0,
             color: "#F87171",
             gradient: "#EF4444",
           },
           {
-            name: "Security",
-            value: 55,
-            color: "#FCD34D",
-            gradient: "#FBBF24",
+            name: "Efficiency",
+            value: 0,
+            color: "#F87171",
+            gradient: "#EF4444",
           },
-          {
-            name: "Scalability",
-            value: 100,
-            color: "#86EFAC",
-            gradient: "#4ADE80",
-          },
-          {
-            name: "Performance",
-            value: 100,
-            color: "#86EFAC",
-            gradient: "#4ADE80",
-          },
-          { name: "Cost", value: 55, color: "#FCD34D", gradient: "#FBBF24" },
         ],
       };
     }
@@ -222,45 +229,89 @@ export const StatsDisplay = ({
       return !completedIssues[issueId];
     });
 
-    // Count recommendations by category (only counting active ones)
-    const categories = activeRecommendations.reduce((acc, rec) => {
+    // Group recommendations by category
+    const categorizedIssues: Record<
+      string,
+      AnalysisResponse["recommendations"]
+    > = {};
+    activeRecommendations.forEach((rec) => {
       const category = rec.category?.toLowerCase() || "other";
-      acc[category] = (acc[category] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
 
-    // Calculate scores based on number of issues (fewer issues = higher score)
-    const securityScore = Math.max(0, 100 - (categories.security || 0) * 10);
-    const readabilityScore = Math.max(
-      0,
-      100 - (categories.readability || 0) * 10
-    );
-    const performanceScore = Math.max(
-      0,
-      100 - (categories.performance || 0) * 10
-    );
-    const scalabilityScore = Math.max(
-      0,
-      100 - (categories.scalability || 0) * 10
-    );
-    const costScore = Math.max(0, 100 - (categories.cost || 0) * 10);
+      // Map readability, scalability, and cost to efficiency
+      let mappedCategory = category;
+      if (["readability", "scalability", "cost"].includes(category)) {
+        mappedCategory = "efficiency";
+      }
 
-    // Calculate overall score as average
+      if (!categorizedIssues[mappedCategory]) {
+        categorizedIssues[mappedCategory] = [];
+      }
+      categorizedIssues[mappedCategory].push(rec);
+    });
+
+    // Calculate category scores
+    const calculateCategoryScore = (
+      issues: AnalysisResponse["recommendations"] = []
+    ) => {
+      if (issues.length === 0) return 100;
+
+      let score = 100;
+
+      issues.sort((a, b) => {
+        const severityA = (a.severity?.toLowerCase() ||
+          "medium") as SeverityLevel;
+        const severityB = (b.severity?.toLowerCase() ||
+          "medium") as SeverityLevel;
+        return SEVERITY_WEIGHTS[severityB] - SEVERITY_WEIGHTS[severityA];
+      });
+
+      // Adjust the impact of security issues to be less severe
+      issues.forEach((issue, index) => {
+        const severity = (issue.severity?.toLowerCase() ||
+          "medium") as SeverityLevel;
+        const baseImpact = SEVERITY_WEIGHTS[severity];
+
+        // Reduce the impact of security issues by 40%
+        const categoryFactor =
+          issue.category?.toLowerCase() === "security" ? 0.6 : 1.0;
+
+        // Diminishing factor - impact reduces with each subsequent issue
+        // Make this less aggressive to avoid extremely low scores
+        const diminishingFactor = Math.max(0.6, 1 - index * 0.08);
+
+        // Calculate point reduction for this issue
+        const pointReduction = baseImpact * diminishingFactor * categoryFactor;
+
+        // Apply the reduction
+        score = Math.max(20, score - pointReduction); // Set minimum score to 20 instead of 0
+      });
+
+      return Math.round(score);
+    };
+
+    // Calculate scores for each category
+    const securityScore = calculateCategoryScore(categorizedIssues.security);
+    const performanceScore = calculateCategoryScore(
+      categorizedIssues.performance
+    );
+    const efficiencyScore = calculateCategoryScore(
+      categorizedIssues.efficiency
+    );
+
+    // Calculate weighted overall score
     const overallScore = Math.round(
-      (securityScore +
-        readabilityScore +
-        performanceScore +
-        scalabilityScore +
-        costScore) /
-        5
+      (securityScore * (CATEGORY_WEIGHTS.security || 1) +
+        performanceScore * (CATEGORY_WEIGHTS.performance || 1) +
+        efficiencyScore * (CATEGORY_WEIGHTS.efficiency || 1)) /
+        ((CATEGORY_WEIGHTS.security || 1) +
+          (CATEGORY_WEIGHTS.performance || 1) +
+          (CATEGORY_WEIGHTS.efficiency || 1))
     );
 
     const overallColors = getScoreColor(overallScore);
     const securityColors = getScoreColor(securityScore);
-    const readabilityColors = getScoreColor(readabilityScore);
     const performanceColors = getScoreColor(performanceScore);
-    const scalabilityColors = getScoreColor(scalabilityScore);
-    const costColors = getScoreColor(costScore);
+    const efficiencyColors = getScoreColor(efficiencyScore);
 
     return {
       mainMetric: {
@@ -270,12 +321,6 @@ export const StatsDisplay = ({
         gradient: overallColors.gradient,
       },
       metrics: [
-        {
-          name: "Readability",
-          value: readabilityScore,
-          color: readabilityColors.main,
-          gradient: readabilityColors.gradient,
-        },
         {
           name: "Security",
           value: securityScore,
@@ -289,16 +334,10 @@ export const StatsDisplay = ({
           gradient: performanceColors.gradient,
         },
         {
-          name: "Scalability",
-          value: scalabilityScore,
-          color: scalabilityColors.main,
-          gradient: scalabilityColors.gradient,
-        },
-        {
-          name: "Cost",
-          value: costScore,
-          color: costColors.main,
-          gradient: costColors.gradient,
+          name: "Efficiency",
+          value: efficiencyScore,
+          color: efficiencyColors.main,
+          gradient: efficiencyColors.gradient,
         },
       ],
     };
@@ -339,7 +378,13 @@ export const StatsDisplay = ({
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Main metric with description - First block */}
-      <div className="bg-[#1A1817] rounded-xl p-8 shadow-lg">
+      <div
+        className={`rounded-xl p-8 shadow-lg border transition-colors duration-300 ${
+          mainMetric.value === 100
+            ? "bg-green-900/10 border-green-900/20"
+            : "bg-[#1A1817] border-transparent"
+        }`}
+      >
         <div className="flex flex-col md:flex-row items-start justify-between gap-8">
           <div className="flex flex-col items-center">
             <CircleGraph
@@ -368,11 +413,17 @@ export const StatsDisplay = ({
       </div>
 
       {/* Smaller metrics row - Second block */}
-      <div className="bg-[#1A1817] rounded-xl p-8 shadow-lg">
+      <div
+        className={`rounded-xl p-8 shadow-lg border transition-colors duration-300 ${
+          metrics.every((metric) => metric.value === 100)
+            ? "bg-green-900/10 border-green-900/20"
+            : "bg-[#1A1817] border-transparent"
+        }`}
+      >
         <h3 className="text-xl font-semibold text-white mb-6 px-4">
           Category Scores
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mx-auto">
+        <div className="flex justify-center items-center gap-12 mx-auto">
           {metrics.map((metric, index) => (
             <div
               key={`${metric.name}-${index}`}
