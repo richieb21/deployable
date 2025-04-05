@@ -44,7 +44,7 @@ export const Features = () => {
             </div>
             <h3 className="text-xl font-semibold">Performance Optimized</h3>
             <p className="text-gray-600 dark:text-gray-400">
-              Get actionable insights to improve your application's performance.
+              Get actionable insights to improve your applications performance.
             </p>
           </div>
 

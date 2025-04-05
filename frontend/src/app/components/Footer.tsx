@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 export const Footer = () => {
   return (
     <footer className="border-t border-gray-200 dark:border-gray-800">

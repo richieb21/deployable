@@ -43,6 +43,7 @@ export const IssuesList = ({
   recommendations = [],
   loading = false,
   onIssueStatusChange,
+  completedIssues = {},
 }: {
   recommendations?: Recommendation[];
   loading?: boolean;
@@ -52,27 +53,13 @@ export const IssuesList = ({
   ) => void;
   selectedIssues: Set<string>;
   onSelectionChange: (selected: Set<string>) => void;
+  completedIssues?: CompletedIssues;
 }) => {
   const [expandedIssue, setExpandedIssue] = useState<number | null>(null);
-  const [completedIssues, setCompletedIssues] = useState<CompletedIssues>({});
   const prevCompletedRef = useRef<CompletedIssues>({});
   const changedIssueIdRef = useRef<string | null>(null);
   const scrollPositionRef = useRef<number>(0);
   const expandingRef = useRef<boolean>(false);
-
-  // Load completed issues from localStorage on mount
-  useEffect(() => {
-    if (recommendations.length > 0) {
-      try {
-        const storedCompletedIssues = localStorage.getItem("completedIssues");
-        if (storedCompletedIssues) {
-          setCompletedIssues(JSON.parse(storedCompletedIssues));
-        }
-      } catch (error) {
-        console.error("Error loading completed issues:", error);
-      }
-    }
-  }, [recommendations]);
 
   // Save completed issues to localStorage when they change
   useEffect(() => {
@@ -122,13 +109,16 @@ export const IssuesList = ({
     // Store the changed issue ID
     changedIssueIdRef.current = issueId;
 
-    setCompletedIssues((prev) => {
-      const newCompletedIssues = {
-        ...prev,
-        [issueId]: !prev[issueId],
-      };
-      return newCompletedIssues;
-    });
+    // Create updated completedIssues
+    const newCompletedIssues = {
+      ...completedIssues,
+      [issueId]: !completedIssues[issueId],
+    };
+
+    // Call the parent's handler directly
+    if (onIssueStatusChange) {
+      onIssueStatusChange(newCompletedIssues, issueId);
+    }
   };
 
   // Handle expanding/collapsing issues

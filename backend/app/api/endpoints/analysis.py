@@ -106,34 +106,35 @@ def chunk_files(files: List[Dict[str, str]], chunk_size: int = 5) -> List[List[D
     Returns:
         List of file chunks
     """
+    return [files[i:i + chunk_size] for i in range(0, len(files), chunk_size)]
     # Group similar files together for better analysis
-    grouped_files = {}
-    for file in files:
-        # Get file extension as a grouping key
-        ext = file.get('name', '').split('.')[-1] if '.' in file.get('name', '') else 'unknown'
-        if ext not in grouped_files:
-            grouped_files[ext] = []
-        grouped_files[ext].append(file)
+    # grouped_files = {}
+    # for file in files:
+    #     # Get file extension as a grouping key
+    #     ext = file.get('name', '').split('.')[-1] if '.' in file.get('name', '') else 'unknown'
+    #     if ext not in grouped_files:
+    #         grouped_files[ext] = []
+    #     grouped_files[ext].append(file)
     
-    # Create chunks with similar files when possible
-    chunks = []
-    remaining_files = []
+    # # Create chunks with similar files when possible
+    # chunks = []
+    # remaining_files = []
     
-    # First create complete chunks of similar files
-    for ext, file_group in grouped_files.items():
-        for i in range(0, len(file_group), chunk_size):
-            chunk = file_group[i:i + chunk_size]
-            if len(chunk) == chunk_size:
-                chunks.append(chunk)
-            else:
-                remaining_files.extend(chunk)
+    # # First create complete chunks of similar files
+    # for ext, file_group in grouped_files.items():
+    #     for i in range(0, len(file_group), chunk_size):
+    #         chunk = file_group[i:i + chunk_size]
+    #         if len(chunk) == chunk_size:
+    #             chunks.append(chunk)
+    #         else:
+    #             remaining_files.extend(chunk)
     
-    # Then handle any remaining files
-    for i in range(0, len(remaining_files), chunk_size):
-        chunks.append(remaining_files[i:i + chunk_size])
+    # # Then handle any remaining files
+    # for i in range(0, len(remaining_files), chunk_size):
+    #     chunks.append(remaining_files[i:i + chunk_size])
     
-    logger.info(f"Created {len(chunks)} chunks with up to {chunk_size} files per chunk")
-    return chunks
+    # logger.info(f"Created {len(chunks)} chunks with up to {chunk_size} files per chunk")
+    # return chunks
 
 @router.post("/", response_model=AnalysisResponse)
 async def analyze_repository(
