@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { AnalysisResponse } from "../types/api";
+import { useTheme } from "../context/ThemeContext";
 
 type StatMetric = {
   name: string;
@@ -13,11 +14,13 @@ type StatMetric = {
 const CircleGraph = ({
   metric,
   size = "normal",
+  shouldAnimate = false,
 }: {
   metric: StatMetric;
   size?: "normal" | "large";
   shouldAnimate?: boolean;
 }) => {
+  const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [displayValue, setDisplayValue] = useState(0);
   const prevValueRef = useRef(0);
@@ -56,7 +59,7 @@ const CircleGraph = ({
     };
 
     requestAnimationFrame(animateValue);
-  }, [metric.value, mounted]);
+  }, [metric.value, mounted, shouldAnimate]);
 
   // Easing function for smoother animation
   const easeOutCubic = (x: number): number => {
@@ -103,7 +106,7 @@ const CircleGraph = ({
             stroke="currentColor"
             strokeWidth={size === "large" ? "14" : "10"}
             fill="transparent"
-            className="text-[#2A2A2A] dark:text-[#2A2A2A]"
+            className={theme === "dark" ? "text-[#2A2A2A]" : "text-gray-200"}
           />
         </svg>
 
@@ -128,15 +131,15 @@ const CircleGraph = ({
 
         {/* Value text */}
         <div
-          className={`${
-            size === "large" ? "text-5xl" : "text-3xl"
-          } font-bold text-white`}
+          className={`${size === "large" ? "text-5xl" : "text-3xl"} font-bold ${
+            theme === "dark" ? "text-white" : "text-gray-900"
+          }`}
         >
           {displayValue}
         </div>
       </div>
       {size !== "large" && (
-        <div className="mt-2 text-base font-medium text-gray-400">
+        <div className="mt-2 text-base font-medium text-gray-500 dark:text-gray-400">
           {metric.name}
         </div>
       )}
@@ -195,6 +198,8 @@ export const StatsDisplay = ({
   changedIssueId?: string | null;
   onScoreUpdate?: (score: number) => void;
 }) => {
+  const { theme } = useTheme();
+
   // Calculate metrics regardless of loading state
   const calculateMetrics = () => {
     if (!analysisData || !analysisData.recommendations) {
@@ -355,10 +360,12 @@ export const StatsDisplay = ({
   // If loading, show a loading state instead of the graphs
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto bg-[#1A1817] rounded-xl p-8 flex justify-center items-center min-h-[300px]">
+      <div className="max-w-5xl mx-auto bg-[#1A1817] dark:bg-[#1A1817] bg-white/90 rounded-xl p-8 flex justify-center items-center min-h-[300px] border border-gray-200 dark:border-transparent">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mb-4"></div>
-          <p className="text-gray-400 text-lg">Analyzing repository...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-800 dark:border-white mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400 text-lg">
+            Analyzing repository...
+          </p>
         </div>
       </div>
     );
@@ -382,7 +389,9 @@ export const StatsDisplay = ({
         className={`rounded-xl p-8 shadow-lg border transition-colors duration-300 ${
           mainMetric.value === 100
             ? "bg-green-900/10 border-green-900/20"
-            : "bg-[#1A1817] border-transparent"
+            : theme === "dark"
+            ? "bg-[#1A1817] border-transparent"
+            : "bg-white border-gray-200"
         }`}
       >
         <div className="flex flex-col md:flex-row items-start justify-between gap-8">
@@ -392,20 +401,29 @@ export const StatsDisplay = ({
               size="large"
               shouldAnimate={changedIssueId !== null}
             />
-            <div className="mt-2 text-xl font-semibold text-gray-400">
+            <div
+              className="mt-2 text-xl font-semibold"
+              style={{ color: theme === "dark" ? "#9ca3af" : "#4b5563" }}
+            >
               Overall Score
             </div>
           </div>
 
           <div className="md:w-2/3 md:pt-8">
-            <h3 className="text-2xl font-bold mb-3 text-white">
+            <h3
+              className="text-2xl font-bold mb-3"
+              style={{ color: theme === "dark" ? "#ffffff" : "#111827" }}
+            >
               {mainMetric.value >= 80
                 ? "Great Overall"
                 : mainMetric.value >= 50
                 ? "Needs Improvement"
                 : "Critical Issues Found"}
             </h3>
-            <p className="text-gray-400 text-lg leading-relaxed">
+            <p
+              className="text-lg leading-relaxed"
+              style={{ color: theme === "dark" ? "#9ca3af" : "#4b5563" }}
+            >
               {getDescription()}
             </p>
           </div>
@@ -417,10 +435,15 @@ export const StatsDisplay = ({
         className={`rounded-xl p-8 shadow-lg border transition-colors duration-300 ${
           metrics.every((metric) => metric.value === 100)
             ? "bg-green-900/10 border-green-900/20"
-            : "bg-[#1A1817] border-transparent"
+            : theme === "dark"
+            ? "bg-[#1A1817] border-transparent"
+            : "bg-white border-gray-200"
         }`}
       >
-        <h3 className="text-xl font-semibold text-white mb-6 px-4">
+        <h3
+          className="text-xl font-semibold mb-6 px-4"
+          style={{ color: theme === "dark" ? "#ffffff" : "#111827" }}
+        >
           Category Scores
         </h3>
         <div className="flex justify-center items-center gap-12 mx-auto">

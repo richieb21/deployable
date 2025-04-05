@@ -7,8 +7,10 @@ import { StatsLayout } from "../components/StatsLayout";
 import { useAnalysis } from "../hooks/useAnalysis";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "../context/ThemeContext";
 
 export default function StatsPage() {
+  const { theme } = useTheme();
   const searchParams = useSearchParams();
   const repoUrl = searchParams.get("repo") || "github.com/richieb21/deployable";
 
@@ -144,13 +146,25 @@ export default function StatsPage() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed top-16 left-0 right-0 z-20 bg-[#121212]/80 backdrop-blur-md py-2 px-4 border-b border-gray-800/50"
+            className={`fixed top-16 left-0 right-0 z-20 ${
+              theme === "dark"
+                ? "bg-[#121212]/80 backdrop-blur-md border-b border-gray-800/50"
+                : "bg-[#f9fafb]/80 backdrop-blur-md border-b border-gray-200"
+            } py-2 px-4`}
           >
             <div className="max-w-5xl mx-auto flex items-center gap-4">
-              <div className="text-xl font-semibold text-white min-w-[40px] text-center">
+              <div
+                className={`text-xl font-semibold ${
+                  theme === "dark" ? "text-white" : "text-gray-900"
+                } min-w-[40px] text-center`}
+              >
                 {overallScore}
               </div>
-              <div className="flex-1 bg-gray-800/50 rounded-full h-2.5">
+              <div
+                className={`flex-1 ${
+                  theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
+                } rounded-full h-2.5`}
+              >
                 <div
                   className="h-2.5 rounded-full transition-all duration-500 ease-out"
                   style={{
@@ -179,7 +193,13 @@ export default function StatsPage() {
 
       <div className="mt-16">
         <div className="flex items-center mb-6 max-w-5xl mx-auto px-2">
-          <h2 className="text-2xl font-bold text-white">Issues to Address</h2>
+          <h2
+            className={`text-2xl font-bold ${
+              theme === "dark" ? "text-white" : "text-gray-900"
+            }`}
+          >
+            Issues to Address
+          </h2>
 
           <div className="ml-auto flex items-center space-x-4">
             <AnimatePresence>
@@ -190,12 +210,20 @@ export default function StatsPage() {
                   exit={{ opacity: 0, x: 20 }}
                   className="flex items-center space-x-2"
                 >
-                  <span className="text-sm text-gray-400">
+                  <span
+                    className={`text-sm ${
+                      theme === "dark" ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
                     {selectedIssues.size} selected
                   </span>
                   <button
                     onClick={handleCompleteAll}
-                    className="flex items-center px-4 py-2 bg-[#2A2D31] text-gray-300 hover:bg-[#353A40] rounded transition-colors"
+                    className={`flex items-center px-4 py-2 ${
+                      theme === "dark"
+                        ? "bg-[#2A2D31] text-gray-300 hover:bg-[#353A40]"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    } rounded transition-colors`}
                   >
                     <svg
                       className="w-4 h-4 mr-2"
@@ -218,7 +246,11 @@ export default function StatsPage() {
 
             <button
               onClick={handleSelectAll}
-              className="flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded transition-colors"
+              className={`flex items-center px-4 py-2 ${
+                theme === "dark"
+                  ? "bg-gray-800 hover:bg-gray-700 text-white"
+                  : "bg-gray-200 hover:bg-gray-300 text-gray-800"
+              } rounded transition-colors`}
             >
               <svg
                 className="w-4 h-4 mr-2"

@@ -2,6 +2,25 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
+/**
+ * GitHub Issues API Route
+ *
+ * This API route handles the creation of GitHub issues by proxying requests to the backend server.
+ *
+ * Example request body:
+ * {
+ *   "owner": "richieb21",
+ *   "repo": "deployable",
+ *   "title": "Test 1",
+ *   "body": "This is a test issue created via the API to verify functionality.",
+ *   "labels": ["bug", "test"],
+ *   "assignees": ["steventanyang"]
+ * }
+ *
+ * The route validates the request, forwards it to the backend, and handles any errors
+ * that might occur during the process.
+ */
+
 interface CreateIssueRequest {
   owner: string;
   repo: string;
