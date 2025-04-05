@@ -354,7 +354,10 @@ class GithubService:
         cache_contents = self._get_cache_contents(owner, repo, path)
 
         if cache_contents:
-            return cache_contents
+            return {
+                "path" : path,
+                "content" : cache_contents
+            }
 
         api_url = f"{self.base_url}/repos/{owner}/{repo}/contents/{path}"
         response = requests.get(api_url, headers=self._get_headers())

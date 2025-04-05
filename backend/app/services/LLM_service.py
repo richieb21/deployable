@@ -221,8 +221,10 @@ class GroqService(BaseLanguageModel):
                 temperature=0.3
             )
             raw_content = response.choices[0].message.content
-            logger.info(raw_content)
-            return self._extract_json(raw_content)
+            logger.info(f"Raw LLM response: {raw_content}")
+            extracted = self._extract_json(raw_content)
+            logger.info(f"Extracted JSON: {extracted}")
+            return extracted
         except Exception as e:
             logger.error(f"Error calling Groq API: {str(e)}")
             raise
