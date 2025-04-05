@@ -24,13 +24,27 @@ export const ImportantFiles = ({ key_files }: ImportantFilesProps) => {
 
   useEffect(() => {
     const sections: StackCategory[] = ["frontend", "backend", "infra"];
+    let currentIndex = 0;
 
-    sections.forEach((section, index) => {
+    const showNextSection = () => {
+      if (currentIndex >= sections.length) return;
+
+      const section = sections[currentIndex];
+      setVisibleSections((prev) => [...prev, section]);
+
+      // Calculate total animation time for files in this section
+      const fileAnimationDuration = key_files[section].length * 100 + 300; // 100ms per file + 300ms buffer
+
+      // Schedule next section after current section's files are done
       setTimeout(() => {
-        setVisibleSections((prev) => [...prev, section]);
-      }, 1000 * index);
-    });
-  }, []);
+        currentIndex++;
+        showNextSection();
+      }, fileAnimationDuration);
+    };
+
+    // Start the sequence
+    showNextSection();
+  }, [key_files]);
 
   // When section becomes visible, show its files
   useEffect(() => {
