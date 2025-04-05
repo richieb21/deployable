@@ -3,6 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ThemeToggle } from "./ThemeToggle";
+import { useTheme } from "../context/ThemeContext";
 
 export interface HeaderProps {
   variant?: "dark" | "light";
@@ -12,22 +14,35 @@ export interface HeaderProps {
 export const Header = ({ variant = "dark", onRefresh }: HeaderProps) => {
   const pathname = usePathname();
   const isStatsPage = pathname === "/stats";
+  const { theme } = useTheme();
+
+  // Use the theme context to determine the actual variant
+  const effectiveVariant =
+    variant === "dark" || theme === "dark" ? "dark" : "light";
 
   return (
     <header
       className={`fixed top-0 left-0 right-0 backdrop-blur-md z-10 ${
-        variant === "dark" ? "bg-[#121212]/80" : "bg-white/80"
+        effectiveVariant === "dark" ? "bg-[#121212]/80" : "bg-[#f9fafb]/80"
       }`}
     >
       <div className="px-6 py-4 flex justify-between items-center">
         <Link href="/" className="flex items-center gap-2">
           <Image
-            src="/logo_light.png"
+            src={
+              effectiveVariant === "dark" ? "/logo_light.png" : "/logo_dark.png"
+            }
             alt="deployable"
             width={32}
             height={32}
           />
-          <span className="text-lg font-semibold text-white">deployable</span>
+          <span
+            className={`text-lg font-semibold ${
+              effectiveVariant === "dark" ? "text-white" : "text-gray-900"
+            }`}
+          >
+            deployable
+          </span>
         </Link>
 
         <nav className="flex gap-6 text-sm text-gray-400 items-center">
@@ -53,15 +68,31 @@ export const Header = ({ variant = "dark", onRefresh }: HeaderProps) => {
               Refresh Analysis
             </button>
           )}
-          <a href="#" className="hover:text-white transition-colors">
+          <a
+            href="#"
+            className={`hover:${
+              effectiveVariant === "dark" ? "text-white" : "text-gray-900"
+            } transition-colors`}
+          >
             Documentation
           </a>
-          <a href="#" className="hover:text-white transition-colors">
+          <a
+            href="#"
+            className={`hover:${
+              effectiveVariant === "dark" ? "text-white" : "text-gray-900"
+            } transition-colors`}
+          >
             GitHub
           </a>
-          <a href="#" className="hover:text-white transition-colors">
+          <a
+            href="#"
+            className={`hover:${
+              effectiveVariant === "dark" ? "text-white" : "text-gray-900"
+            } transition-colors`}
+          >
             Contact
           </a>
+          <ThemeToggle />
         </nav>
       </div>
     </header>

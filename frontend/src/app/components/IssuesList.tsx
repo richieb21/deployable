@@ -3,6 +3,7 @@
 import { Recommendation } from "../types/api";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "../context/ThemeContext";
 
 type IssueSeverity = "HIGH" | "MEDIUM" | "LOW";
 
@@ -67,6 +68,7 @@ export const IssuesList = ({
   repoOwner?: string;
   repoName?: string;
 }) => {
+  const { theme } = useTheme();
   const [expandedIssue, setExpandedIssue] = useState<number | null>(null);
   const prevCompletedRef = useRef<CompletedIssues>({});
   const changedIssueIdRef = useRef<string | null>(null);
@@ -340,10 +342,26 @@ ${issue.category}
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto bg-[#1A1817] rounded-xl p-8 flex justify-center items-center min-h-[200px]">
+      <div
+        className="max-w-5xl mx-auto rounded-xl p-8 flex justify-center items-center min-h-[200px] border"
+        style={{
+          backgroundColor: theme === "dark" ? "#1A1817" : "white",
+          borderColor: theme === "dark" ? "transparent" : "#e5e7eb",
+        }}
+      >
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mb-4"></div>
-          <p className="text-gray-400 text-lg">Loading issues...</p>
+          <div
+            className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 mb-4"
+            style={{
+              borderColor: theme === "dark" ? "white" : "#1f2937",
+            }}
+          ></div>
+          <p
+            style={{ color: theme === "dark" ? "#9ca3af" : "#4b5563" }}
+            className="text-lg"
+          >
+            Loading issues...
+          </p>
         </div>
       </div>
     );
@@ -351,36 +369,59 @@ ${issue.category}
 
   if (!recommendations || recommendations.length === 0) {
     return (
-      <div className="max-w-5xl mx-auto bg-[#1A1817] rounded-xl p-8 text-center">
-        <p className="text-gray-400 text-lg">No issues found.</p>
+      <div
+        className="max-w-5xl mx-auto rounded-xl p-8 text-center border"
+        style={{
+          backgroundColor: theme === "dark" ? "#1A1817" : "white",
+          borderColor: theme === "dark" ? "transparent" : "#e5e7eb",
+        }}
+      >
+        <p
+          style={{ color: theme === "dark" ? "#9ca3af" : "#4b5563" }}
+          className="text-lg"
+        >
+          No issues found.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4">
-      <AnimatePresence initial={false}>
+    <div className="max-w-5xl mx-auto">
+      <AnimatePresence>
         {sortedRecommendations.map((issue, index) => {
           const issueId = `${issue.title}-${issue.file_path}`;
           const isCompleted = completedIssues[issueId] || false;
-          const isCreated = !!createdIssues[issueId];
-          const isLoading = isCreatingIssue[issueId] || false;
           const severityColor = getSeverityColor(
             issue.severity as IssueSeverity
           );
+          const isCreated = !!createdIssues[issueId];
+          const isLoading = isCreatingIssue[issueId] || false;
 
           return (
-            <div key={issueId} className="rounded-xl shadow-md overflow-hidden">
+            <div key={issueId} className="mb-4">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
+                exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
-                className={`relative ${
-                  isCompleted
-                    ? "bg-green-900/5 hover:bg-green-900/10 border border-green-900/10"
-                    : "bg-[#1A1817] hover:bg-[#232323] border border-gray-800/30"
-                }`}
+                className={`relative rounded-t-xl ${
+                  expandedIssue === index ? "" : "rounded-b-xl"
+                } overflow-hidden`}
+                style={{
+                  backgroundColor: isCompleted
+                    ? "rgba(20, 83, 45, 0.05)"
+                    : theme === "dark"
+                    ? "#1A1817"
+                    : "white",
+                  borderWidth: 1,
+                  borderStyle: "solid",
+                  borderColor: isCompleted
+                    ? "rgba(20, 83, 45, 0.2)"
+                    : theme === "dark"
+                    ? "rgba(75, 85, 99, 0.3)"
+                    : "#e5e7eb",
+                }}
               >
                 {/* Severity color bar on left edge */}
                 <div
@@ -395,20 +436,42 @@ ${issue.category}
                     onClick={() => handleToggleExpand(index)}
                   >
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white mb-2">
+                      <h3
+                        className="text-lg font-semibold mb-2"
+                        style={{
+                          color: theme === "dark" ? "white" : "#111827",
+                        }}
+                      >
                         {issue.title}
                       </h3>
-                      <p className="text-sm text-gray-400">{issue.file_path}</p>
+                      <p
+                        className="text-sm"
+                        style={{
+                          color: theme === "dark" ? "#9ca3af" : "#6b7280",
+                        }}
+                      >
+                        {issue.file_path}
+                      </p>
                     </div>
                     <div className="flex flex-col items-end space-y-4 ml-6">
                       <div className="flex items-center space-x-4">
-                        <span className="text-xs font-medium px-3 py-1 rounded bg-gray-800 text-gray-300">
+                        <span
+                          className="text-xs font-medium px-3 py-1 rounded"
+                          style={{
+                            backgroundColor:
+                              theme === "dark" ? "#1f2937" : "#f3f4f6",
+                            color: theme === "dark" ? "#d1d5db" : "#4b5563",
+                          }}
+                        >
                           {issue.category}
                         </span>
                         <svg
-                          className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${
+                          className={`w-5 h-5 transition-transform duration-300 ${
                             expandedIssue === index ? "rotate-180" : ""
                           }`}
+                          style={{
+                            color: theme === "dark" ? "#9ca3af" : "#6b7280",
+                          }}
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -425,13 +488,27 @@ ${issue.category}
                         <button
                           onClick={(e) => createGitHubIssue(issue, issueId, e)}
                           disabled={isCreated || isLoading}
-                          className={`flex items-center px-4 py-2 rounded-md transition-colors duration-200 ${
-                            isCreated
-                              ? "bg-green-600/20 text-green-400 cursor-default"
+                          style={{
+                            backgroundColor: isCreated
+                              ? "rgba(22, 163, 74, 0.2)"
                               : isLoading
-                              ? "bg-gray-700 text-gray-400 cursor-wait"
-                              : "bg-[#2A2D31] text-gray-300 hover:bg-[#353A40]"
-                          }`}
+                              ? theme === "dark"
+                                ? "#374151"
+                                : "#d1d5db"
+                              : theme === "dark"
+                              ? "#2A2D31"
+                              : "#e5e7eb",
+                            color: isCreated
+                              ? "#15803d"
+                              : isLoading
+                              ? theme === "dark"
+                                ? "#9ca3af"
+                                : "#4b5563"
+                              : theme === "dark"
+                              ? "#d1d5db"
+                              : "#374151",
+                          }}
+                          className="flex items-center px-4 py-2 rounded-md transition-colors duration-200 hover:bg-opacity-90"
                         >
                           <svg
                             className={`w-4 h-4 mr-2 ${
@@ -439,7 +516,13 @@ ${issue.category}
                             }`}
                             fill="none"
                             viewBox="0 0 24 24"
-                            stroke="currentColor"
+                            stroke={
+                              isCreated
+                                ? "#15803d"
+                                : theme === "dark"
+                                ? "#9ca3af"
+                                : "#4b5563"
+                            }
                           >
                             {isCreated ? (
                               <path
@@ -475,18 +558,32 @@ ${issue.category}
                         </button>
                         <button
                           onClick={(e) => toggleIssueCompletion(issueId, e)}
-                          className={`flex items-center px-4 py-2 rounded-md transition-colors duration-200 ${
-                            isCompleted
-                              ? "bg-green-600/20 text-green-400 hover:bg-green-600/30"
-                              : "bg-[#2A2D31] text-gray-300 hover:bg-[#353A40]"
-                          }`}
+                          className="flex items-center px-4 py-2 rounded-md transition-colors duration-200"
+                          style={{
+                            backgroundColor: isCompleted
+                              ? "rgba(22, 163, 74, 0.2)"
+                              : theme === "dark"
+                              ? "#2A2D31"
+                              : "#e5e7eb",
+                            color: isCompleted
+                              ? "#15803d"
+                              : theme === "dark"
+                              ? "#d1d5db"
+                              : "#374151",
+                          }}
                         >
                           <svg
                             className={`w-4 h-4 mr-2 ${
                               isCompleted ? "text-green-400" : "text-gray-400"
                             }`}
                             fill="none"
-                            stroke="currentColor"
+                            stroke={
+                              isCompleted
+                                ? "#15803d"
+                                : theme === "dark"
+                                ? "#9ca3af"
+                                : "#4b5563"
+                            }
                             viewBox="0 0 24 24"
                           >
                             {isCompleted ? (
@@ -523,19 +620,32 @@ ${issue.category}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className={`overflow-hidden ${
-                      isCompleted
-                        ? "bg-green-900/5 border-t border-green-900/10"
-                        : "bg-[#1A1817] border-t border-gray-800/30"
-                    }`}
+                    className="overflow-hidden"
+                    style={{
+                      backgroundColor: isCompleted
+                        ? "rgba(20, 83, 45, 0.05)"
+                        : theme === "dark"
+                        ? "#1A1817"
+                        : "white",
+                      borderTop: "1px solid",
+                      borderTopColor: isCompleted
+                        ? "rgba(20, 83, 45, 0.1)"
+                        : theme === "dark"
+                        ? "rgba(75, 85, 99, 0.3)"
+                        : "#e5e7eb",
+                    }}
                   >
                     <div className="p-8 pl-10">
                       <div
-                        className={`pl-8 border-l-2 ${
-                          isCompleted
-                            ? "border-green-800/30 opacity-80"
-                            : "border-gray-700"
-                        }`}
+                        className="pl-8 border-l-2"
+                        style={{
+                          borderLeftColor: isCompleted
+                            ? "rgba(20, 83, 45, 0.3)"
+                            : theme === "dark"
+                            ? "#4b5563"
+                            : "#9ca3af",
+                          opacity: isCompleted ? 0.8 : 1,
+                        }}
                       >
                         {/* Show GitHub issue link if created */}
                         {isCreated && createdIssues[issueId] && (
