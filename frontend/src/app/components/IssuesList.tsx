@@ -1,24 +1,25 @@
+/**
+ * IssuesList Component
+ *
+ * This is the main container component for displaying a list of code quality issues.
+ * It handles:
+ * - Loading and sorting issues by severity and completion status
+ * - Managing state for completed and created GitHub issues
+ * - Persisting issue status in localStorage
+ * - Handling issue expansion/collapse
+ * - Creating GitHub issues via API
+ *
+ * The component delegates rendering of individual issues to the IssueItem component
+ * for better separation of concerns and maintainability.
+ */
+
 "use client";
 
 import { Recommendation } from "../types/api";
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
-
-type IssueSeverity = "HIGH" | "MEDIUM" | "LOW";
-
-const getSeverityColor = (severity: IssueSeverity) => {
-  switch (severity) {
-    case "HIGH":
-      return "bg-red-500";
-    case "MEDIUM":
-      return "bg-yellow-500";
-    case "LOW":
-      return "bg-blue-500";
-    default:
-      return "bg-gray-500";
-  }
-};
+import IssueItem from "./IssueItem";
 
 // Get severity weight for sorting (higher number = higher severity)
 const getSeverityWeight = (severity: string): number => {
@@ -392,369 +393,24 @@ ${issue.category}
         {sortedRecommendations.map((issue, index) => {
           const issueId = `${issue.title}-${issue.file_path}`;
           const isCompleted = completedIssues[issueId] || false;
-          const severityColor = getSeverityColor(
-            issue.severity as IssueSeverity
-          );
           const isCreated = !!createdIssues[issueId];
-          const isLoading = isCreatingIssue[issueId] || false;
+          const isCreatingIssueItem = isCreatingIssue[issueId] || false;
 
           return (
-            <div key={issueId} className="mb-4">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-                className={`relative rounded-t-xl ${
-                  expandedIssue === index ? "" : "rounded-b-xl"
-                } overflow-hidden`}
-                style={{
-                  backgroundColor: isCompleted
-                    ? "rgba(20, 83, 45, 0.05)"
-                    : theme === "dark"
-                    ? "#1A1817"
-                    : "white",
-                  borderWidth: 1,
-                  borderStyle: "solid",
-                  borderColor: isCompleted
-                    ? "rgba(20, 83, 45, 0.2)"
-                    : theme === "dark"
-                    ? "rgba(75, 85, 99, 0.3)"
-                    : "#e5e7eb",
-                }}
-              >
-                {/* Severity color bar on left edge */}
-                <div
-                  className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-                    isCompleted ? "bg-green-500" : severityColor
-                  }`}
-                ></div>
-
-                <div className="p-8 pl-10">
-                  <div
-                    className="flex justify-between cursor-pointer"
-                    onClick={() => handleToggleExpand(index)}
-                  >
-                    <div className="flex-1">
-                      <h3
-                        className="text-lg font-semibold mb-2"
-                        style={{
-                          color: theme === "dark" ? "white" : "#111827",
-                        }}
-                      >
-                        {issue.title}
-                      </h3>
-                      <p
-                        className="text-sm"
-                        style={{
-                          color: theme === "dark" ? "#9ca3af" : "#6b7280",
-                        }}
-                      >
-                        {issue.file_path}
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-end space-y-4 ml-6">
-                      <div className="flex items-center space-x-4">
-                        <span
-                          className="text-xs font-medium px-3 py-1 rounded"
-                          style={{
-                            backgroundColor:
-                              theme === "dark" ? "#1f2937" : "#f3f4f6",
-                            color: theme === "dark" ? "#d1d5db" : "#4b5563",
-                          }}
-                        >
-                          {issue.category}
-                        </span>
-                        <svg
-                          className={`w-5 h-5 transition-transform duration-300 ${
-                            expandedIssue === index ? "rotate-180" : ""
-                          }`}
-                          style={{
-                            color: theme === "dark" ? "#9ca3af" : "#6b7280",
-                          }}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M19 9l-7 7-7-7"
-                          ></path>
-                        </svg>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={(e) => createGitHubIssue(issue, issueId, e)}
-                          disabled={isCreated || isLoading}
-                          style={{
-                            backgroundColor: isCreated
-                              ? "rgba(22, 163, 74, 0.2)"
-                              : isLoading
-                              ? theme === "dark"
-                                ? "#374151"
-                                : "#d1d5db"
-                              : theme === "dark"
-                              ? "#2A2D31"
-                              : "#e5e7eb",
-                            color: isCreated
-                              ? "#15803d"
-                              : isLoading
-                              ? theme === "dark"
-                                ? "#9ca3af"
-                                : "#4b5563"
-                              : theme === "dark"
-                              ? "#d1d5db"
-                              : "#374151",
-                          }}
-                          className="flex items-center px-4 py-2 rounded-md transition-colors duration-200 hover:bg-opacity-90"
-                        >
-                          <svg
-                            className={`w-4 h-4 mr-2 ${
-                              isCreated ? "text-green-400" : "text-gray-400"
-                            }`}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke={
-                              isCreated
-                                ? "#15803d"
-                                : theme === "dark"
-                                ? "#9ca3af"
-                                : "#4b5563"
-                            }
-                          >
-                            {isCreated ? (
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M5 13l4 4L19 7"
-                              />
-                            ) : isLoading ? (
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                                className="animate-spin"
-                              />
-                            ) : (
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 3c.53 0 1.04.21 1.41.59.38.37.59.88.59 1.41 0 .53-.21 1.04-.59 1.41-.37.38-.88.59-1.41.59-.53 0-1.04-.21-1.41-.59C10.21 6.04 10 5.53 10 5c0-.53.21-1.04.59-1.41C10.96 3.21 11.47 3 12 3zM12 15c.53 0 1.04.21 1.41.59.38.37.59.88.59 1.41 0 .53-.21 1.04-.59 1.41-.37.38-.88.59-1.41.59-.53 0-1.04-.21-1.41-.59-.38-.37-.59-.88-.59-1.41 0-.53.21-1.04.59-1.41.37-.38.88-.59 1.41-.59zM12 9c.53 0 1.04.21 1.41.59.38.37.59.88.59 1.41 0 .53-.21 1.04-.59 1.41-.37.38-.88.59-1.41.59-.53 0-1.04-.21-1.41-.59C10.21 11.04 10 10.53 10 10c0-.53.21-1.04.59-1.41C10.96 9.21 11.47 9 12 9z"
-                              />
-                            )}
-                          </svg>
-                          <span className="text-sm">
-                            {isCreated
-                              ? "Issue Created"
-                              : isLoading
-                              ? "Creating..."
-                              : "Create Issue"}
-                          </span>
-                        </button>
-                        <button
-                          onClick={(e) => toggleIssueCompletion(issueId, e)}
-                          className="flex items-center px-4 py-2 rounded-md transition-colors duration-200"
-                          style={{
-                            backgroundColor: isCompleted
-                              ? "rgba(22, 163, 74, 0.2)"
-                              : theme === "dark"
-                              ? "#2A2D31"
-                              : "#e5e7eb",
-                            color: isCompleted
-                              ? "#15803d"
-                              : theme === "dark"
-                              ? "#d1d5db"
-                              : "#374151",
-                          }}
-                        >
-                          <svg
-                            className={`w-4 h-4 mr-2 ${
-                              isCompleted ? "text-green-400" : "text-gray-400"
-                            }`}
-                            fill="none"
-                            stroke={
-                              isCompleted
-                                ? "#15803d"
-                                : theme === "dark"
-                                ? "#9ca3af"
-                                : "#4b5563"
-                            }
-                            viewBox="0 0 24 24"
-                          >
-                            {isCompleted ? (
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M5 13l4 4L19 7"
-                              />
-                            ) : (
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                              />
-                            )}
-                          </svg>
-                          <span className="text-sm">
-                            {isCompleted ? "Completed" : "Complete"}
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Expanded issue content */}
-              <AnimatePresence>
-                {expandedIssue === index && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="overflow-hidden"
-                    style={{
-                      backgroundColor: isCompleted
-                        ? "rgba(20, 83, 45, 0.05)"
-                        : theme === "dark"
-                        ? "#1A1817"
-                        : "white",
-                      borderTop: "1px solid",
-                      borderTopColor: isCompleted
-                        ? "rgba(20, 83, 45, 0.1)"
-                        : theme === "dark"
-                        ? "rgba(75, 85, 99, 0.3)"
-                        : "#e5e7eb",
-                    }}
-                  >
-                    <div className="p-8 pl-10">
-                      <div
-                        className="pl-8 border-l-2"
-                        style={{
-                          borderLeftColor: isCompleted
-                            ? "rgba(20, 83, 45, 0.3)"
-                            : theme === "dark"
-                            ? "#4b5563"
-                            : "#9ca3af",
-                          opacity: isCompleted ? 0.8 : 1,
-                        }}
-                      >
-                        {/* Show GitHub issue link if created */}
-                        {isCreated && createdIssues[issueId] && (
-                          <div className="mb-4 p-3 bg-green-900/20 border border-green-800/30 rounded-md">
-                            <p className="text-green-400 flex items-center">
-                              <svg
-                                className="w-5 h-5 mr-2"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2"
-                                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                                />
-                              </svg>
-                              GitHub issue created:
-                              <a
-                                href={createdIssues[issueId].url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="ml-2 underline hover:text-green-300"
-                              >
-                                #{createdIssues[issueId].number}
-                              </a>
-                            </p>
-                          </div>
-                        )}
-
-                        <p className="text-gray-300 mb-6">
-                          {issue.description}
-                        </p>
-
-                        {/* Rest of the expanded content remains the same */}
-                        {issue.action_items &&
-                          issue.action_items.length > 0 && (
-                            <div className="mb-6">
-                              <h4 className="text-sm font-medium text-white mb-3">
-                                Action Items:
-                              </h4>
-                              <ul className="list-disc pl-5 text-sm text-gray-300 space-y-2">
-                                {issue.action_items.map((item, i) => (
-                                  <li key={i}>{item}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                        {issue.code_snippets &&
-                          (issue.code_snippets.before ||
-                            issue.code_snippets.after) && (
-                            <div className="mb-6">
-                              <h4 className="text-sm font-medium text-white mb-3">
-                                Code Snippets:
-                              </h4>
-
-                              {issue.code_snippets.before && (
-                                <div className="mb-4">
-                                  <p className="text-xs text-gray-400 mb-2">
-                                    Before:
-                                  </p>
-                                  <pre className="bg-[#0A0A0A] p-4 rounded text-xs overflow-x-auto text-gray-300">
-                                    {issue.code_snippets.before}
-                                  </pre>
-                                </div>
-                              )}
-
-                              {issue.code_snippets.after && (
-                                <div>
-                                  <p className="text-xs text-gray-400 mb-2">
-                                    After:
-                                  </p>
-                                  <pre className="bg-[#0A0A0A] p-4 rounded text-xs overflow-x-auto text-gray-300">
-                                    {issue.code_snippets.after}
-                                  </pre>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                        {issue.references && issue.references.length > 0 && (
-                          <div>
-                            <h4 className="text-sm font-medium text-white mb-3">
-                              References:
-                            </h4>
-                            <ul className="list-disc pl-5 text-sm text-gray-300 space-y-2">
-                              {issue.references.map((ref, i) => (
-                                <li key={i}>
-                                  <a
-                                    href={ref}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-400 hover:underline"
-                                  >
-                                    {ref}
-                                  </a>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            <IssueItem
+              key={issueId}
+              issue={issue}
+              index={index}
+              issueId={issueId}
+              isCompleted={isCompleted}
+              isCreated={isCreated}
+              isCreatingIssue={isCreatingIssueItem}
+              expandedIssue={expandedIssue}
+              createdIssueInfo={createdIssues[issueId]}
+              handleToggleExpand={handleToggleExpand}
+              toggleIssueCompletion={toggleIssueCompletion}
+              createGitHubIssue={createGitHubIssue}
+            />
           );
         })}
       </AnimatePresence>
