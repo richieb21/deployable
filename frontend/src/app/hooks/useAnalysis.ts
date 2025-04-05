@@ -75,6 +75,9 @@ export function useAnalysis(repoUrl: string) {
     const cacheKey = `${CACHE_KEY_PREFIX}${repoUrl}`;
     localStorage.removeItem(cacheKey);
 
+    // Also clear created issues when refreshing
+    localStorage.removeItem("createdIssues");
+
     setLoading(true);
     try {
       const response = await fetch("/api/analysis", {

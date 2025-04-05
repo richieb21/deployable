@@ -11,6 +11,14 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function StatsPage() {
   const searchParams = useSearchParams();
   const repoUrl = searchParams.get("repo") || "github.com/richieb21/deployable";
+
+  // Extract owner and repo from the URL
+  const repoUrlParts = repoUrl
+    .replace(/^https?:\/\/(www\.)?github\.com\//, "")
+    .split("/");
+  const repoOwner = repoUrlParts[0] || "";
+  const repoName = repoUrlParts[1] || "";
+
   const [completedIssues, setCompletedIssues] = useState<{
     [key: string]: boolean;
   }>({});
@@ -20,9 +28,6 @@ export default function StatsPage() {
   const [overallScore, setOverallScore] = useState(0);
   const [selectedIssues, setSelectedIssues] = useState<Set<string>>(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
-
-  // Extract just the repo name from the URL
-  const repoName = repoUrl.split("/").slice(-2).join("/");
 
   // Fetch analysis data with caching
   const { data, loading, error, refreshAnalysis } = useAnalysis(repoUrl);
@@ -119,8 +124,19 @@ export default function StatsPage() {
     changedIssueIdRef.current = "bulk-update";
   };
 
+  const handleRefresh = () => {
+    // Clear created issues state
+    localStorage.removeItem("createdIssues");
+
+    // Call the refreshAnalysis function
+    refreshAnalysis();
+  };
+
   return (
-    <StatsLayout repoName={repoName} onRefresh={refreshAnalysis}>
+    <StatsLayout
+      repoName={`${repoOwner}/${repoName}`}
+      onRefresh={handleRefresh}
+    >
       {/* Floating progress bar */}
       <AnimatePresence>
         {showProgressBar && (
@@ -177,22 +193,6 @@ export default function StatsPage() {
                   <span className="text-sm text-gray-400">
                     {selectedIssues.size} selected
                   </span>
-                  <button className="flex items-center px-4 py-2 bg-[#2A2D31] text-gray-300 hover:bg-[#353A40] rounded transition-colors">
-                    <svg
-                      className="w-4 h-4 mr-2"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
-                    Create Issues
-                  </button>
                   <button
                     onClick={handleCompleteAll}
                     className="flex items-center px-4 py-2 bg-[#2A2D31] text-gray-300 hover:bg-[#353A40] rounded transition-colors"
@@ -251,6 +251,8 @@ export default function StatsPage() {
           selectedIssues={selectedIssues}
           onSelectionChange={setSelectedIssues}
           completedIssues={completedIssues}
+          repoOwner={repoOwner}
+          repoName={repoName}
         />
       </div>
     </StatsLayout>
