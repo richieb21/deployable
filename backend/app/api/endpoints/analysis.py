@@ -45,17 +45,17 @@ def analyze_file_batch(files_batch: List[Dict[str, str]], client_pool, batch_ind
     
     try:
         # Get a client from the pool
-        deepseek_client = client_pool.get_client()
+        client = client_pool.get_client()
         
         logger.info(f"Batch {batch_index}: Analyzing {len(files_batch)} files ({total_content_size/1024:.1f} KB)")
         
         prompt_start_time = time.time()
-        analysis_prompt = deepseek_client.get_file_analysis_prompt(files_batch)
+        analysis_prompt = client.get_file_analysis_prompt(files_batch)
         prompt_duration = time.time() - prompt_start_time
         logger.info(f"Batch {batch_index}: Prompt generation took {prompt_duration:.2f} seconds")
         
         model_start_time = time.time()
-        analysis_response = deepseek_client.call_model(analysis_prompt)
+        analysis_response = client.call_model(analysis_prompt)
         model_duration = time.time() - model_start_time
         logger.info(f"Batch {batch_index}: Model API call took {model_duration:.2f} seconds")
         
@@ -69,14 +69,14 @@ def analyze_file_batch(files_batch: List[Dict[str, str]], client_pool, batch_ind
             logger.info(f"Batch {batch_index}: Analysis complete, found {len(recommendations)} recommendations in {batch_duration:.2f} seconds")
             
             # Return the client to the pool
-            client_pool.return_client(deepseek_client)
+            client_pool.return_client(client)
             return recommendations
         except json.JSONDecodeError as e:
             logger.error(f"Batch {batch_index}: Failed to parse JSON response: {str(e)}")
             logger.error(f"Batch {batch_index}: Raw response snippet: {analysis_response[:200]}...")
             
             # Return the client to the pool
-            client_pool.return_client(deepseek_client)
+            client_pool.return_client(client)
             return [{
                 "title": "JSON Parsing Error",
                 "description": f"Failed to parse model response: {str(e)}. This is likely due to an invalid JSON format returned by the model.",

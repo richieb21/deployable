@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.endpoints import analysis, github
+from app.api.endpoints import analysis, github, streaming
 from app.core.logging_config import setup_logging
 
 import warnings
@@ -30,6 +30,7 @@ warnings.filterwarnings(
 
 app.include_router(analysis.router)
 app.include_router(github.router)
+app.include_router(streaming.router)
 
 @app.get("/")
 async def root():

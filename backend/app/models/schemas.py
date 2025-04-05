@@ -19,6 +19,11 @@ class RecommendationCategory(str, Enum):
     COMPLIANCE = "COMPLIANCE"
     COST = "COST"
 
+class AnalysisEventType(str, Enum):
+    PROGRESS = "PROGRESS"
+    COMPLETE = "COMPLETE"
+    HEARTBEAT = "HEARTBEAT"
+
 class TechStack(BaseModel):
     frontend: List[str] = Field(default_factory=list, description="Frontend technologies")
     backend: List[str] = Field(default_factory=list, description="Backend technologies")
@@ -37,14 +42,25 @@ class Recommendation(BaseModel):
     category: RecommendationCategory
     action_items: List[str]
 
+"""Streaming Specific Types"""
+
+class AnalysisProgressEvent(BaseModel):
+    type: AnalysisEventType = AnalysisEventType.PROGRESS
+    chunk_index: int
+    files: List[str]
+    recommendations_count: int
+
+class AnalysisCompleteEvent(BaseModel):
+    type: AnalysisEventType = AnalysisEventType.COMPLETE
+    recommendations: List[Recommendation]
+    analysis_timestamp: str
+
+class AnalysisHeartbeatEvent(BaseModel):
+    type: AnalysisEventType = AnalysisEventType.HEARTBEAT
+
 class AnalysisRequest(BaseModel):
     repo_url: HttpUrl = Field(..., description="GitHub repository URL to analyze")
-    # target_platforms: Optional[List[str]] = Field(
-    #     default=None, description="Specific deployment platforms to target"
-    # )
-    # preferences: Optional[Dict[str, Any]] = Field(
-    #     default=None, description="User preferences for deployment"
-    # )
+    analysis_id: str # this is to send the analyze_batch_info to the streaming endpoint
 
 
 class AnalysisResponse(BaseModel):
@@ -67,3 +83,9 @@ class IdentifyKeyFilesResponse(BaseModel):
         default_factory=TechStack,
         description="Technology stack detected"
     )
+
+class AnalysisStreamStartRequest(BaseModel):
+    repo_url: str
+
+class AnalysisStreamStartResponse(BaseModel):
+    analysis_id: str
