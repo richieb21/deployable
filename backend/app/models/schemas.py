@@ -60,7 +60,7 @@ class AnalysisHeartbeatEvent(BaseModel):
 
 class AnalysisRequest(BaseModel):
     repo_url: HttpUrl = Field(..., description="GitHub repository URL to analyze")
-    analysis_id: str # this is to send the analyze_batch_info to the streaming endpoint
+    analysis_id: Optional[str] = None  # if not provided, we will not stream events
 
 
 class AnalysisResponse(BaseModel):

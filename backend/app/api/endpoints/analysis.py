@@ -27,7 +27,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-CURRENT_LLM_PROIVDER = "groq"
+CURRENT_LLM_PROIVDER = "deepseek"
 recommendations_lock = threading.Lock()
 
 def analyze_file_batch(files_batch: List[Dict[str, str]], client_pool, batch_index: int, analysis_id: str) -> List[Dict[str, Any]]:
@@ -129,6 +129,7 @@ async def analyze_repository(
 ):
     """
     Analyze a GitHub repository for deployment readiness using multiple parallel LLM clients.
+    Can operate in streaming mode if analysis_id is provided, otherwise runs synchronously.
     """
     overall_start_time = time.time()
     logger.info(f"Starting analysis for repository: {request.repo_url}")
@@ -178,26 +179,46 @@ async def analyze_repository(
         logger.info(f"Split files into {len(file_chunks)} chunks for processing")
         
         all_recommendations = []
-        
-        # Create a pool of LLM clients
-        max_workers = max(1, min(len(file_chunks), 10)) 
+        max_workers = max(1, min(len(file_chunks), 10))
         client_pool = LLMClientPool(size=max_workers, llm_provider=CURRENT_LLM_PROIVDER)
         
         analysis_start = time.time()
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            queue = analysis_streams.get(request.analysis_id)
-            tasks = []
-            
-            # Create async tasks for each chunk
-            for i, chunk in enumerate(file_chunks):
-                task = process_batch(executor, chunk, client_pool, i, request.analysis_id, queue)
-                tasks.append(task)
-            
-            # Wait for all tasks to complete
-            results = await asyncio.gather(*tasks)
-            for _, chunk_recommendations in results:
-                with recommendations_lock:
-                    all_recommendations.extend(chunk_recommendations)
+            if request.analysis_id: # we need to stream
+                queue = analysis_streams.get(request.analysis_id)
+                if not queue:
+                    raise HTTPException(status_code=404, detail="Analysis stream not found")
+                
+                tasks = []
+                for i, chunk in enumerate(file_chunks):
+                    task = process_batch(executor, chunk, client_pool, i, request.analysis_id, queue)
+                    tasks.append(task)
+                
+                results = await asyncio.gather(*tasks)
+                for _, chunk_recommendations in results:
+                    with recommendations_lock:
+                        all_recommendations.extend(chunk_recommendations)
+                
+                await queue.put({
+                    "type": "COMPLETE",
+                    "recommendations": all_recommendations,
+                    "analysis_timestamp": datetime.now().isoformat()
+                })
+            else: # don't stream events, process synchronously in parallel
+                futures = {
+                    executor.submit(analyze_file_batch, chunk, client_pool, i, None): i 
+                    for i, chunk in enumerate(file_chunks)
+                }
+                
+                for future in concurrent.futures.as_completed(futures):
+                    chunk_index = futures[future]
+                    try:
+                        chunk_recommendations = future.result()
+                        logger.info(f"Chunk {chunk_index} processed")
+                        with recommendations_lock:
+                            all_recommendations.extend(chunk_recommendations)
+                    except Exception as e:
+                        logger.error(f"Error processing chunk {chunk_index}: {str(e)}")
         
         analysis_duration = time.time() - analysis_start
         logger.info(f"All chunks processed in {analysis_duration:.2f} seconds")
@@ -205,19 +226,11 @@ async def analyze_repository(
         logger.info(f"Analysis complete. Found {len(all_recommendations)} recommendations")
         overall_duration = time.time() - overall_start_time
         logger.info(f"Total analysis completed in {overall_duration:.2f} seconds")
-
-        await queue.put({
-            "type" : "COMPLETE",
-            "recommendations" : all_recommendations,
-            "analysis_timestamp": "test"
-        })
-        
-        end_time = datetime.now()
         
         return AnalysisResponse(
             repository=repo_url,
             recommendations=all_recommendations,
-            analysis_timestamp=end_time.isoformat()
+            analysis_timestamp=datetime.now().isoformat()
         )
         
     except Exception as e:

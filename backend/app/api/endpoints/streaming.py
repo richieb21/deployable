@@ -19,6 +19,7 @@ analysis_streams = {}
 
 # we need an event generator to service the stream with different events and information
 async def event_generator(analysis_id: str):
+    """Processes events in the given asynchronous async queue to yield event data"""
     if analysis_id not in analysis_streams:
         raise HTTPException(status_code=404, detail=f"Analysis Session for the id: {analysis_id} not found")
 
@@ -37,11 +38,7 @@ async def event_generator(analysis_id: str):
                 if event_type not in AnalysisEventType.__members__:
                     logger.error(f"Invalid event type: {event_type}")
                     continue
-
-                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
-                logger.info(f"[{current_time}] EVENT RECEIVED: {event_type}")
                 
-                # Important: Format must be "data: {json}\n\n"
                 if event_type == AnalysisEventType.PROGRESS:
                     yield f"data: {json.dumps(data)}\n\n"
                 elif event_type == AnalysisEventType.COMPLETE:
@@ -55,9 +52,8 @@ async def event_generator(analysis_id: str):
             del analysis_streams[analysis_id]        
 # start stream
 @router.post("/start", response_model=AnalysisStreamStartResponse)
-async def start_analysis_stream(
-    request: AnalysisStreamStartRequest
-):
+async def start_analysis_stream():
+    """Register an analysis queue that can be streamed to"""
     analysis_id = str(uuid4())
     analysis_streams[analysis_id] = asyncio.Queue()
 
