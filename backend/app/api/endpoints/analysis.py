@@ -6,12 +6,14 @@ import concurrent.futures
 from datetime import datetime
 import threading
 import time
+import asyncio
 
 from app.models.schemas import AnalysisRequest, AnalysisResponse, IdentifyKeyFilesRequest, IdentifyKeyFilesResponse
 from app.services.github_service import GithubService
 from app.services.LLM_service import create_language_service
 from app.services.multithreading_service import LLMClientPool
 from app.core.dependencies import get_redis_client
+from app.api.endpoints.streaming import analysis_streams
 
 from redis import Redis
 
@@ -25,75 +27,39 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-CURRENT_LLM_PROIVDER = "groq"
+CURRENT_LLM_PROIVDER = "deepseek"
 recommendations_lock = threading.Lock()
 
-def analyze_file_batch(files_batch: List[Dict[str, str]], client_pool, batch_index: int) -> List[Dict[str, Any]]:
+def analyze_file_batch(files_batch: List[Dict[str, str]], client_pool, batch_index: int, analysis_id: str) -> List[Dict[str, Any]]:
     """
     Analyze a batch of files using a client from the pool.
-    
-    Args:
-        files_batch: List of file content dictionaries to analyze
-        client_pool: Pool of DeepSeek clients
-        batch_index: Index of the current batch for logging
-        
-    Returns:
-        List of recommendations
     """
-    batch_start_time = time.time()
-    total_content_size = sum(len(file.get('content', '')) for file in files_batch)
-    
     try:
-        # Get a client from the pool
-        deepseek_client = client_pool.get_client()
+        client = client_pool.get_client()
         
-        logger.info(f"Batch {batch_index}: Analyzing {len(files_batch)} files ({total_content_size/1024:.1f} KB)")
+        logger.info(f"Batch {batch_index}: Starting analysis of {len(files_batch)} files")
         
         prompt_start_time = time.time()
-        analysis_prompt = deepseek_client.get_file_analysis_prompt(files_batch)
+        analysis_prompt = client.get_file_analysis_prompt(files_batch)
         prompt_duration = time.time() - prompt_start_time
         logger.info(f"Batch {batch_index}: Prompt generation took {prompt_duration:.2f} seconds")
         
         model_start_time = time.time()
-        analysis_response = deepseek_client.call_model(analysis_prompt)
+        analysis_response = client.call_model(analysis_prompt)
         model_duration = time.time() - model_start_time
         logger.info(f"Batch {batch_index}: Model API call took {model_duration:.2f} seconds")
         
         try:
-            parse_start_time = time.time()
             recommendations = json.loads(analysis_response)
-            parse_duration = time.time() - parse_start_time
-            logger.info(f"Batch {batch_index}: JSON parsing took {parse_duration:.2f} seconds")
-            
-            batch_duration = time.time() - batch_start_time
-            logger.info(f"Batch {batch_index}: Analysis complete, found {len(recommendations)} recommendations in {batch_duration:.2f} seconds")
-            
-            # Return the client to the pool
-            client_pool.return_client(deepseek_client)
             return recommendations
-        except json.JSONDecodeError as e:
-            logger.error(f"Batch {batch_index}: Failed to parse JSON response: {str(e)}")
-            logger.error(f"Batch {batch_index}: Raw response snippet: {analysis_response[:200]}...")
             
-            # Return the client to the pool
-            client_pool.return_client(deepseek_client)
-            return [{
-                "title": "JSON Parsing Error",
-                "description": f"Failed to parse model response: {str(e)}. This is likely due to an invalid JSON format returned by the model.",
-                "file_path": "N/A",
-                "severity": "LOW",
-                "category": "INFRASTRUCTURE",
-                "action_items": ["Retry the analysis", "Check model response format"],
-                "code_snippets": {
-                    "before": "N/A",
-                    "after": "N/A"
-                },
-                "references": []
-            }]
-        
+        except json.JSONDecodeError as e:
+            logger.error(f"Batch {batch_index}: JSON parse error: {str(e)}")
+            return []
+            
     except Exception as e:
-        logger.error(f"Batch {batch_index}: Error in file batch analysis: {str(e)}")
-        return []  # Return empty list instead of failing the entire process
+        logger.error(f"Batch {batch_index}: Error in batch analysis: {str(e)}")
+        return []
 
 def chunk_files(files: List[Dict[str, str]], chunk_size: int = 5) -> List[List[Dict[str, str]]]:
     """
@@ -116,25 +82,46 @@ def chunk_files(files: List[Dict[str, str]], chunk_size: int = 5) -> List[List[D
     #         grouped_files[ext] = []
     #     grouped_files[ext].append(file)
     
-    # # Create chunks with similar files when possible
-    # chunks = []
-    # remaining_files = []
+    chunks = []
+    remaining_files = []
     
-    # # First create complete chunks of similar files
-    # for ext, file_group in grouped_files.items():
-    #     for i in range(0, len(file_group), chunk_size):
-    #         chunk = file_group[i:i + chunk_size]
-    #         if len(chunk) == chunk_size:
-    #             chunks.append(chunk)
-    #         else:
-    #             remaining_files.extend(chunk)
-    
+    for ext, file_group in grouped_files.items():
+        for i in range(0, len(file_group), chunk_size):
+            chunk = file_group[i:i + chunk_size]
+            if len(chunk) == chunk_size:
+                chunks.append(chunk)
+            else:
+                remaining_files.extend(chunk)
+
     # # Then handle any remaining files
     # for i in range(0, len(remaining_files), chunk_size):
     #     chunks.append(remaining_files[i:i + chunk_size])
     
     # logger.info(f"Created {len(chunks)} chunks with up to {chunk_size} files per chunk")
     # return chunks
+
+async def process_batch(executor, chunk, client_pool, chunk_index, analysis_id, queue):
+    """
+    Takes a future from a thread executor and turns it into an asynchronous future, allowing 
+    asynchronous functions (queuing events) to be ran concurrently
+    """
+    future = executor.submit(analyze_file_batch, chunk, client_pool, chunk_index, analysis_id)
+    try:
+        chunk_recommendations = await asyncio.wrap_future(future)
+        
+        progress_event = {
+            "type": "PROGRESS",
+            "chunk_index": chunk_index,
+            "files": [file.get('path', 'unknown') for file in chunk],
+            "recommendations_count": len(chunk_recommendations)
+        }
+        
+        await queue.put(progress_event)
+        
+        return chunk_index, chunk_recommendations
+    except Exception as e:
+        logger.error(f"Error processing chunk {chunk_index}: {str(e)}")
+        return chunk_index, []
 
 @router.post("/", response_model=AnalysisResponse)
 async def analyze_repository(
@@ -143,6 +130,7 @@ async def analyze_repository(
 ):
     """
     Analyze a GitHub repository for deployment readiness using multiple parallel LLM clients.
+    Can operate in streaming mode if analysis_id is provided, otherwise runs synchronously.
     """
     overall_start_time = time.time()
     logger.info(f"Starting analysis for repository: {request.repo_url}")
@@ -175,9 +163,6 @@ async def analyze_repository(
             identify_duration = time.time() - identify_start
             logger.info(f"Identified important files in {identify_duration:.2f} seconds")
             
-            # Count files by category
-            file_counts = {category: len(files) for category, files in important_files.items()}
-            logger.info(f"File counts by category: {file_counts}")
         except json.JSONDecodeError:
             logger.error(f"Failed to parse important files response: {files_response}")
             important_files = {"frontend": [], "backend": [], "infra": []}
@@ -195,34 +180,46 @@ async def analyze_repository(
         logger.info(f"Split files into {len(file_chunks)} chunks for processing")
         
         all_recommendations = []
-        
-        # Create a pool of LLM clients
-        max_workers = max(1, min(len(file_chunks), 10))  # Ensure at least 1 worker
+        max_workers = max(1, min(len(file_chunks), 10))
         client_pool = LLMClientPool(size=max_workers, llm_provider=CURRENT_LLM_PROIVDER)
         
-        # Use a thread pool executor for parallel processing
         analysis_start = time.time()
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_chunk = {
-                executor.submit(analyze_file_batch, chunk, client_pool, i): i 
-                for i, chunk in enumerate(file_chunks)
-            }
-            
-            completed = 0
-            for future in concurrent.futures.as_completed(future_to_chunk):
-                chunk_index = future_to_chunk[future]
-                try:
-                    chunk_recommendations = future.result()
-                    completed += 1
-                    progress_pct = (completed / len(file_chunks)) * 100
-                    logger.info(f"Chunk {chunk_index} processed with {len(chunk_recommendations)} recommendations ({completed}/{len(file_chunks)} complete, {progress_pct:.1f}%)")
-                    
-                    # Locking to avoid race conditions
+            if request.analysis_id: # we need to stream
+                queue = analysis_streams.get(request.analysis_id)
+                if not queue:
+                    raise HTTPException(status_code=404, detail="Analysis stream not found")
+                
+                tasks = []
+                for i, chunk in enumerate(file_chunks):
+                    task = process_batch(executor, chunk, client_pool, i, request.analysis_id, queue)
+                    tasks.append(task)
+                
+                results = await asyncio.gather(*tasks)
+                for _, chunk_recommendations in results:
                     with recommendations_lock:
                         all_recommendations.extend(chunk_recommendations)
-                        
-                except Exception as e:
-                    logger.error(f"Error processing chunk {chunk_index}: {str(e)}")
+                
+                await queue.put({
+                    "type": "COMPLETE",
+                    "recommendations": all_recommendations,
+                    "analysis_timestamp": datetime.now().isoformat()
+                })
+            else: # don't stream events, process synchronously in parallel
+                futures = {
+                    executor.submit(analyze_file_batch, chunk, client_pool, i, None): i 
+                    for i, chunk in enumerate(file_chunks)
+                }
+                
+                for future in concurrent.futures.as_completed(futures):
+                    chunk_index = futures[future]
+                    try:
+                        chunk_recommendations = future.result()
+                        logger.info(f"Chunk {chunk_index} processed")
+                        with recommendations_lock:
+                            all_recommendations.extend(chunk_recommendations)
+                    except Exception as e:
+                        logger.error(f"Error processing chunk {chunk_index}: {str(e)}")
         
         analysis_duration = time.time() - analysis_start
         logger.info(f"All chunks processed in {analysis_duration:.2f} seconds")
@@ -231,12 +228,10 @@ async def analyze_repository(
         overall_duration = time.time() - overall_start_time
         logger.info(f"Total analysis completed in {overall_duration:.2f} seconds")
         
-        end_time = datetime.now()
-        
         return AnalysisResponse(
             repository=repo_url,
             recommendations=all_recommendations,
-            analysis_timestamp=end_time.isoformat()
+            analysis_timestamp=datetime.now().isoformat()
         )
         
     except Exception as e:
