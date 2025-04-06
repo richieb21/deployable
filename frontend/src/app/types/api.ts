@@ -15,10 +15,11 @@ export enum Severity {
   INFO = "INFO",
 }
 
-export interface AnalysisRequest {
-  repo_url: string;
-  api_key?: string;
-}
+export type KeyFiles = {
+  frontend: string[];
+  backend: string[];
+  infra: string[];
+};
 
 export interface CodeSnippet {
   before?: string;
@@ -34,6 +35,12 @@ export interface Recommendation {
   action_items?: string[];
   code_snippets?: CodeSnippet;
   references?: string[];
+}
+
+export interface AnalysisRequest {
+  repo_url: string;
+  important_files?: KeyFiles;
+  analysis_id?: string;
 }
 
 export interface AnalysisResponse {

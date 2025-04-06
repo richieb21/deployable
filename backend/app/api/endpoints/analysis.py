@@ -138,45 +138,24 @@ async def analyze_repository(
     github_service = GithubService(redis_client=redis_client)
     
     try:
-        repo_url = str(request.repo_url)
+        repo_url = str(request.repo_url)        
+        important_files = request.important_files
+        
+        logger.info("TYPEEEEEEE")
+        logger.info(type(important_files))
+        logger.info(important_files)
 
-        list_files_start = time.time()
-        all_files = github_service.list_filenames(repo_url)
-        list_files_duration = time.time() - list_files_start
-        logger.info(f"Listed {len(all_files)} files in {list_files_duration:.2f} seconds")
-        
-        # identify important files to analyze
-        llm_service = create_language_service(CURRENT_LLM_PROIVDER) 
-        
-        identify_start = time.time()
-        logger.info(all_files)
-        files_prompt = llm_service.identify_files_prompt(all_files)
-        
-        model_start = time.time()
-        files_response = llm_service.call_model(files_prompt)
-        logger.info(files_response)
-        model_duration = time.time() - model_start
-        logger.info(f"Files identification model call took {model_duration:.2f} seconds")
-        
-        try:
-            important_files = json.loads(files_response)
-            identify_duration = time.time() - identify_start
-            logger.info(f"Identified important files in {identify_duration:.2f} seconds")
-            
-        except json.JSONDecodeError:
-            logger.error(f"Failed to parse important files response: {files_response}")
-            important_files = {"frontend": [], "backend": [], "infra": []}
-        
         files_to_analyze = []
-        for _, file_list in important_files.items():
-            files_to_analyze.extend(file_list)
+        files_to_analyze.extend(important_files.frontend)
+        files_to_analyze.extend(important_files.backend)
+        files_to_analyze.extend(important_files.infra)
         
         fetch_start = time.time()
         file_contents = github_service.get_file_content_batch(repo_url, files_to_analyze)
         fetch_duration = time.time() - fetch_start
         logger.info(f"Fetched content for {len(file_contents)} files in {fetch_duration:.2f} seconds")
         
-        file_chunks = chunk_files(file_contents, chunk_size=5) 
+        file_chunks = chunk_files(file_contents, chunk_size=3) 
         logger.info(f"Split files into {len(file_chunks)} chunks for processing")
         
         all_recommendations = []

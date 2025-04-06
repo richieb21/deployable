@@ -60,6 +60,10 @@ class AnalysisHeartbeatEvent(BaseModel):
 
 class AnalysisRequest(BaseModel):
     repo_url: HttpUrl = Field(..., description="GitHub repository URL to analyze")
+    important_files: KeyFiles = Field(
+        default_factory=KeyFiles,
+        description="Key Files for Analysis"
+    )
     analysis_id: Optional[str] = None  # if not provided, we will not stream events, backwords compatible
 
 

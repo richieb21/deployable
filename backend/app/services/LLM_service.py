@@ -293,7 +293,7 @@ class QuasarService(BaseLanguageModel):
         
 
 # Fallback to deepseek bc its cheap lol
-def create_language_service(provider: Literal["deepseek", "openai", "groq", "claude"] = "deepseek", api_key: Optional[str] = None) -> BaseLanguageModel:
+def create_language_service(provider: Literal["deepseek", "openai", "groq", "claude", "quasar"] = "deepseek", api_key: Optional[str] = None) -> BaseLanguageModel:
     """Factory function to create the appropriate language model service"""
     if provider == "deepseek":
         return DeepseekService(api_key)

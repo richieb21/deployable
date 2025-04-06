@@ -95,6 +95,7 @@ export default function FileTreeTestPage() {
         },
         body: JSON.stringify({
           repo_url: url,
+          important_files: keyFiles,
           analysis_id,
         }),
       });
