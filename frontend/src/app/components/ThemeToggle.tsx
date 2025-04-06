@@ -2,6 +2,12 @@
 
 import { useTheme } from "../context/ThemeContext";
 
+/**
+ * ThemeToggle Component
+ * 
+ * A button that toggles between light and dark themes.
+ * Shows a sun icon in dark mode and a moon icon in light mode.
+ */
 export const ThemeToggle = () => {
   const { theme, toggleTheme } = useTheme();
 
@@ -29,7 +35,7 @@ export const ThemeToggle = () => {
       ) : (
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5 text-gray-600"
+          className="h-5 w-5 text-gray-700"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
