@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from pydantic import BaseModel
 from typing import List, Optional
 import asyncio
@@ -6,6 +6,7 @@ import traceback
 import logging
 
 from app.mcp.github_api_client import github_api_client
+from app.mcp.github_client import github_mcp_client  # Import the MCP client
 
 router = APIRouter(prefix="/github", tags=["github"])
 
@@ -27,9 +28,19 @@ class IssueResponse(BaseModel):
     title: str
     state: str
     
+class ListIssuesRequest(BaseModel):
+    owner: str
+    repo: str
+    state: Optional[str] = "open"
+    labels: Optional[List[str]] = None
+    sort: Optional[str] = "created"
+    direction: Optional[str] = "desc"
+    page: Optional[int] = 1
+    per_page: Optional[int] = 30
+
 @router.post("/issues", response_model=IssueResponse)
 async def create_issue(request: CreateIssueRequest):
-    """Create a GitHub issue in the specified repository."""
+    """Create a GitHub issue in the specified repository using direct API."""
     try:
         logger.info(f"Received request to create issue in {request.owner}/{request.repo}")
         logger.info(f"Issue title: {request.title}")
@@ -85,3 +96,93 @@ async def create_issue(request: CreateIssueRequest):
         logger.error(f"Unexpected error: {str(e)}")
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Failed to create GitHub issue: {str(e)}") 
+
+@router.post("/mcpissues", response_model=IssueResponse)
+async def create_issue_with_mcp(request: CreateIssueRequest, background_tasks: BackgroundTasks):
+    """Create a GitHub issue using the MCP client."""
+    try:
+        logger.info(f"Received request to create issue via MCP in {request.owner}/{request.repo}")
+        logger.info(f"Issue title: {request.title}")
+        
+        # Create the issue using MCP client
+        logger.info(f"Creating issue with MCP in {request.owner}/{request.repo}")
+        result = await github_mcp_client.create_issue(
+            owner=request.owner,
+            repo=request.repo,
+            title=request.title,
+            body=request.body,
+            labels=request.labels,
+            assignees=request.assignees
+        )
+        
+        # Add background task to close the MCP client after response is sent
+        background_tasks.add_task(github_mcp_client.close)
+        
+        logger.info(f"Successfully created issue with MCP #{result.get('number')}")
+        return result
+    except ValueError as e:
+        logger.error(f"Value error in MCP: {str(e)}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=400, detail=str(e))
+    except PermissionError as e:
+        logger.error(f"Permission error in MCP: {str(e)}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=403, detail=str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error in MCP: {str(e)}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Failed to create GitHub issue with MCP: {str(e)}")
+
+
+    """Test MCP with a simple calculator server."""
+    logger.info(f"Testing MCP calculator with {a} {op} {b}")
+    
+    # Save the original server command and args
+    original_command = github_mcp_client.server_command
+    original_args = github_mcp_client.server_args
+    
+    try:
+        # Temporarily change to use the calculator server
+        github_mcp_client.server_command = "npx"
+        github_mcp_client.server_args = ["-y", "@modelcontextprotocol/server-calculator"]
+        
+        # Close any existing server process
+        await github_mcp_client.close()
+        
+        # Get a client session
+        client = await github_mcp_client._ensure_server_running()
+        
+        # Call the appropriate calculator method
+        if op == "add" or op == "+":
+            result = await client.call("add", {"a": a, "b": b})
+        elif op == "subtract" or op == "-":
+            result = await client.call("subtract", {"a": a, "b": b})
+        elif op == "multiply" or op == "*":
+            result = await client.call("multiply", {"a": a, "b": b})
+        elif op == "divide" or op == "/":
+            result = await client.call("divide", {"a": a, "b": b})
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported operation: {op}")
+        
+        # Add background task to close the MCP client after response is sent
+        background_tasks.add_task(github_mcp_client.close)
+        
+        return {
+            "operation": f"{a} {op} {b}",
+            "result": result
+        }
+    except Exception as e:
+        logger.error(f"Error testing MCP calculator: {str(e)}")
+        logger.error(traceback.format_exc())
+        
+        # Add background task to close the MCP client after response is sent
+        background_tasks.add_task(github_mcp_client.close)
+        
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to test MCP calculator: {str(e)}"
+        )
+    finally:
+        # Restore the original server command and args
+        github_mcp_client.server_command = original_command
+        github_mcp_client.server_args = original_args
