@@ -230,7 +230,7 @@ class GroqService(BaseLanguageModel):
             raise
 
 class ClaudeService(BaseLanguageModel):
-    """Tencent Hunyuan Implementation"""
+    """Claude Sonnet Implementation"""
     def _initialize_client(self):
         self.api_key = self.api_key or os.getenv("CLAUDE_API_KEY")
         if not self.api_key:
@@ -259,6 +259,37 @@ class ClaudeService(BaseLanguageModel):
         except Exception as e:
             logger.error(f"Error calling Claude API: {str(e)}")
             raise
+
+class QuasarService(BaseLanguageModel):
+    """OpenRouter Quasar Implementation"""
+    def _initialize_client(self):
+        self.api_key = self.api_key or os.getenv("OPENROUTER_API_KEY")
+        if not self.api_key:
+            logger.error("No OpenRouter API key provided")
+            raise ValueError("OPENROUTER_API_KEY environment variable not set")
+        
+        self.client = OpenAI(api_key=self.api_key, base_url='https://openrouter.ai/api/v1')
+        self.model = "openrouter/quasar-alpha"
+
+    def call_model(self, prompt: str):
+        messages = [
+            {"role": "system", "content": "You are a staff engineer who is amazing at making deployment ready applications."},
+            {"role": "user", "content": prompt}
+        ]
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+            )
+            raw_content = response.choices[0].message.content
+            logger.info(f"Raw LLM response: {raw_content}")
+            extracted = self._extract_json(raw_content) 
+            logger.info(f"Extracted JSON: {extracted}")
+            return extracted
+        except Exception as e:
+            logger.error(f"Error calling OpenRouter API: {str(e)}")
+            raise
         
 
 # Fallback to deepseek bc its cheap lol
@@ -272,3 +303,5 @@ def create_language_service(provider: Literal["deepseek", "openai", "groq", "cla
         return GroqService()
     elif provider == "claude":
         return ClaudeService()
+    elif provider == "quasar":
+        return QuasarService()

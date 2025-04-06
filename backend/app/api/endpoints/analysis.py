@@ -27,7 +27,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-CURRENT_LLM_PROIVDER = "deepseek"
+CURRENT_LLM_PROIVDER = "quasar"
 recommendations_lock = threading.Lock()
 
 def analyze_file_batch(files_batch: List[Dict[str, str]], client_pool, batch_index: int, analysis_id: str) -> List[Dict[str, Any]]:
