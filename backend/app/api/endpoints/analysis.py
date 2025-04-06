@@ -252,7 +252,7 @@ async def identify_key_files(
     github_service = GithubService(redis_client=redis_client)
     all_files = github_service.list_filenames(repo_url)
 
-    llm = create_language_service("claude")
+    llm = create_language_service("quasar")
 
     prompt_identify = llm.identify_files_prompt(all_files)
     prompt_tech_stack = llm.get_tech_stack_prompt(all_files)
