@@ -38,6 +38,7 @@ export function AnimatedLogo({
           height={size}
           viewBox="0 0 200 200"
           xmlns="http://www.w3.org/2000/svg"
+          className="animated-logo"
         >
           <rect
             x="0"
@@ -55,7 +56,7 @@ export function AnimatedLogo({
             fill={theme === "dark" ? "black" : "white"}
           />
           <rect
-            id="pupil"
+            className="pupil"
             x="80"
             y="80"
             width="40"
