@@ -266,19 +266,39 @@ export const StatsDisplay = ({
     const categorizedIssues: Record<
       string,
       AnalysisResponse["recommendations"]
-    > = {};
+    > = {
+      security: [],
+      performance: [],
+      efficiency: [],
+    };
+
     activeRecommendations.forEach((rec) => {
       const category = rec.category?.toLowerCase() || "other";
 
-      // Map readability, scalability, and cost to efficiency
-      let mappedCategory = category;
-      if (["readability", "scalability", "cost"].includes(category)) {
+      // Map categories to our three main categories
+      let mappedCategory: string;
+
+      if (category === "security" || category === "compliance") {
+        // Compliance issues are typically security-related
+        mappedCategory = "security";
+      } else if (category === "performance") {
+        mappedCategory = "performance";
+      } else if (
+        [
+          "readability",
+          "scalability",
+          "cost",
+          "reliability",
+          "infrastructure",
+        ].includes(category)
+      ) {
+        // Reliability and infrastructure affect the overall efficiency of the system
+        mappedCategory = "efficiency";
+      } else {
+        // Default any other category to efficiency
         mappedCategory = "efficiency";
       }
 
-      if (!categorizedIssues[mappedCategory]) {
-        categorizedIssues[mappedCategory] = [];
-      }
       categorizedIssues[mappedCategory].push(rec);
     });
 
