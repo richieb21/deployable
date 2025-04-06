@@ -2,12 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "../context/ThemeContext";
 
+/**
+ * Hero Component
+ *
+ * The main landing page hero section with a repository input form.
+ */
 export const Hero = () => {
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { theme } = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,17 +33,53 @@ export const Hero = () => {
     }
   };
 
+  // Define button styles based on theme
+  const buttonStyle =
+    theme === "dark"
+      ? {
+          background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+          color: "white",
+          boxShadow: "0 4px 14px rgba(16, 185, 129, 0.4)",
+          border: "none",
+        }
+      : {
+          background: "linear-gradient(135deg, #047857 0%, #065F46 100%)",
+          color: "white",
+          boxShadow: "0 4px 14px rgba(5, 150, 105, 0.25)",
+          border: "none",
+        };
+
+  // Define input styles based on theme
+  const inputStyle = {
+    backgroundColor: theme === "dark" ? "#1f2937" : "white",
+    color: theme === "dark" ? "#f9fafb" : "#111827",
+    borderWidth: 2,
+    borderStyle: "solid",
+    borderColor:
+      theme === "dark" ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.2)",
+    boxShadow:
+      theme === "dark"
+        ? "0 4px 12px rgba(0, 0, 0, 0.3)"
+        : "0 4px 12px rgba(0, 0, 0, 0.08)",
+    fontWeight: 500,
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-32">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-48 pb-64">
       <div className="text-center space-y-8">
-        <h2 className="text-5xl sm:text-6xl font-bold max-w-3xl mx-auto leading-tight">
+        <h2
+          className="text-5xl sm:text-6xl font-bold max-w-3xl mx-auto leading-tight"
+          style={{ color: theme === "dark" ? "#ffffff" : "#111827" }}
+        >
           Ship with confidence, <br />
-          <span className="text-orange-600 dark:text-orange-500">
+          <span className="text-green-600 dark:text-green-500">
             deploy without surprises
           </span>
         </h2>
-        <p className="text-xl max-w-2xl mx-auto text-black/80 dark:text-white/80">
-          {" "}
+        <p
+          className="text-xl max-w-2xl mx-auto"
+          style={{ color: theme === "dark" ? "#d1d5db" : "#4b5563" }}
+        >
           A free, instant AI-powered analysis of your repository to catch
           deployment issues before they catch you.
         </p>
@@ -53,21 +96,18 @@ export const Hero = () => {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://github.com/richieb21/deployable"
-                className="w-full px-6 py-4 bg-white dark:bg-gray-900 border-2 border-black/10 dark:border-white/10 rounded-xl 
-                         focus:outline-none focus:border-orange-500 dark:focus:border-orange-500 
-                         placeholder:text-gray-400 dark:placeholder:text-gray-600
-                         text-black dark:text-white"
+                className="w-full px-6 py-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                style={inputStyle}
                 disabled={isLoading}
               />
             </div>
             <button
               type="submit"
               disabled={isLoading || !url}
-              className="px-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-xl font-semibold 
-                        hover:bg-gray-800 dark:hover:bg-gray-100 transition whitespace-nowrap
-                        disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-4 rounded-xl font-semibold transition whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:transform hover:scale-105"
+              style={buttonStyle}
             >
-              {isLoading ? "Analyzing..." : "Deploy!"}
+              {isLoading ? "Analyzing..." : "Analyze"}
             </button>
           </div>
           {error && <p className="text-red-500 text-sm mt-2">{error}</p>}

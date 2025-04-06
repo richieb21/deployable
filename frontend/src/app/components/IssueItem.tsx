@@ -160,7 +160,9 @@ const IssueItem = ({
                   disabled={isCreated || isCreatingIssue}
                   style={{
                     backgroundColor: isCreated
-                      ? "rgba(22, 163, 74, 0.2)"
+                      ? theme === "dark"
+                        ? "rgba(22, 163, 74, 0.3)"
+                        : "rgba(22, 163, 74, 0.2)"
                       : isCreatingIssue
                       ? theme === "dark"
                         ? "#374151"
@@ -169,7 +171,9 @@ const IssueItem = ({
                       ? "#2A2D31"
                       : "#e5e7eb",
                     color: isCreated
-                      ? "#15803d"
+                      ? theme === "dark"
+                        ? "#4ade80"
+                        : "#15803d"
                       : isCreatingIssue
                       ? theme === "dark"
                         ? "#9ca3af"
@@ -188,7 +192,9 @@ const IssueItem = ({
                     viewBox="0 0 24 24"
                     stroke={
                       isCreated
-                        ? "#15803d"
+                        ? theme === "dark"
+                          ? "#4ade80"
+                          : "#15803d"
                         : theme === "dark"
                         ? "#9ca3af"
                         : "#4b5563"
@@ -210,12 +216,16 @@ const IssueItem = ({
                         className="animate-spin"
                       />
                     ) : (
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 3c.53 0 1.04.21 1.41.59.38.37.59.88.59 1.41 0 .53-.21 1.04-.59 1.41-.37.38-.88.59-1.41.59-.53 0-1.04-.21-1.41-.59C10.21 6.04 10 5.53 10 5c0-.53.21-1.04.59-1.41C10.96 3.21 11.47 3 12 3zM12 15c.53 0 1.04.21 1.41.59.38.37.59.88.59 1.41 0 .53-.21 1.04-.59 1.41-.37.38-.88.59-1.41.59-.53 0-1.04-.21-1.41-.59-.38-.37-.59-.88-.59-1.41 0-.53.21-1.04.59-1.41.37-.38.88-.59 1.41-.59zM12 9c.53 0 1.04.21 1.41.59.38.37.59.88.59 1.41 0 .53-.21 1.04-.59 1.41-.37.38-.88.59-1.41.59-.53 0-1.04-.21-1.41-.59C10.21 11.04 10 10.53 10 10c0-.53.21-1.04.59-1.41C10.96 9.21 11.47 9 12 9z"
-                      />
+                      <>
+                        <circle cx="12" cy="12" r="7" strokeWidth="2" />
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="1"
+                          strokeWidth="2"
+                          fill="currentColor"
+                        />
+                      </>
                     )}
                   </svg>
                   <span className="text-sm">
@@ -231,12 +241,16 @@ const IssueItem = ({
                   className="flex items-center px-4 py-2 rounded-md transition-colors duration-200"
                   style={{
                     backgroundColor: isCompleted
-                      ? "rgba(22, 163, 74, 0.2)"
+                      ? theme === "dark"
+                        ? "rgba(22, 163, 74, 0.3)"
+                        : "rgba(22, 163, 74, 0.2)"
                       : theme === "dark"
                       ? "#2A2D31"
                       : "#e5e7eb",
                     color: isCompleted
-                      ? "#15803d"
+                      ? theme === "dark"
+                        ? "#4ade80"
+                        : "#15803d"
                       : theme === "dark"
                       ? "#d1d5db"
                       : "#374151",
@@ -249,7 +263,9 @@ const IssueItem = ({
                     fill="none"
                     stroke={
                       isCompleted
-                        ? "#15803d"
+                        ? theme === "dark"
+                          ? "#4ade80"
+                          : "#15803d"
                         : theme === "dark"
                         ? "#9ca3af"
                         : "#4b5563"
