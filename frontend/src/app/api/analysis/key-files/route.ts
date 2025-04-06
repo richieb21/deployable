@@ -1,17 +1,20 @@
 "use server";
 
 import { NextRequest, NextResponse } from "next/server";
-import { AnalysisRequest, AnalysisResponse } from "../../types/api";
+import {
+  IdentifyKeyFilesRequest,
+  IdentifyKeyFilesResponse,
+} from "@/app/types/api";
 
 export async function POST(request: NextRequest) {
   try {
-    const body: AnalysisRequest = await request.json();
+    const body: IdentifyKeyFilesRequest = await request.json();
     const BASE_URL = process.env.NEXT_BACKEND_URL_DEV;
-    const ENDPOINT = "/analysis";
+    const ENDPOINT = "/analysis/key-files";
 
     if (!BASE_URL) {
       return NextResponse.json(
-        { error: "Backend URL is not configured" },
+        { error: "Backend URL is not configured " },
         { status: 500 }
       );
     }
@@ -27,20 +30,20 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = response.json().catch(() => {});
       return NextResponse.json(
         { error: "Backend request failed", details: errorData },
         { status: response.status }
       );
     }
 
-    const data: AnalysisResponse = await response.json();
-    return NextResponse.json(data, { status: 200 });
+    const data: IdentifyKeyFilesResponse = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
-    console.error("Analysis API error:", error);
+    console.error(error);
     return NextResponse.json(
       {
-        error: "Internal server error",
+        error: "Internal server error ",
         message: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }

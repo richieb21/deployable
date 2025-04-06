@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { AnalysisResponse } from "../types/api";
+import {
+  AnalysisResponse,
+  IdentifyKeyFilesResponse,
+  KeyFiles,
+} from "../types/api";
 
 // Cache key prefix for storing analysis results
 const CACHE_KEY_PREFIX = "deployable_analysis_";
@@ -10,6 +14,7 @@ export function useAnalysis(repoUrl: string) {
   const [data, setData] = useState<AnalysisResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
+  const [keyFiles, setKeyFiles] = useState<KeyFiles | null>(null);
 
   useEffect(() => {
     async function fetchAnalysis() {
@@ -37,7 +42,8 @@ export function useAnalysis(repoUrl: string) {
 
       setLoading(true);
       try {
-        const response = await fetch("/api/analysis", {
+        // First, fetch key files
+        const keyFilesResponse = await fetch("/api/analysis/key-files", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -45,11 +51,35 @@ export function useAnalysis(repoUrl: string) {
           body: JSON.stringify({ repo_url: repoUrl }),
         });
 
-        if (!response.ok) {
-          throw new Error(`Analysis request failed: ${response.status}`);
+        if (!keyFilesResponse.ok) {
+          throw new Error(
+            `Key files request failed: ${keyFilesResponse.status}`
+          );
         }
 
-        const result = await response.json();
+        const keyFilesResult: IdentifyKeyFilesResponse =
+          await keyFilesResponse.json();
+        setKeyFiles(keyFilesResult.key_files);
+
+        // Then, use the key files in the analysis request
+        const analysisResponse = await fetch("/api/analysis", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            repo_url: repoUrl,
+            important_files: keyFilesResult.key_files,
+          }),
+        });
+
+        if (!analysisResponse.ok) {
+          throw new Error(
+            `Analysis request failed: ${analysisResponse.status}`
+          );
+        }
+
+        const result = await analysisResponse.json();
 
         // Cache the results
         try {
@@ -80,7 +110,8 @@ export function useAnalysis(repoUrl: string) {
 
     setLoading(true);
     try {
-      const response = await fetch("/api/analysis", {
+      // First, fetch key files
+      const keyFilesResponse = await fetch("/api/analysis/key-files", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -88,11 +119,31 @@ export function useAnalysis(repoUrl: string) {
         body: JSON.stringify({ repo_url: repoUrl }),
       });
 
-      if (!response.ok) {
-        throw new Error(`Analysis request failed: ${response.status}`);
+      if (!keyFilesResponse.ok) {
+        throw new Error(`Key files request failed: ${keyFilesResponse.status}`);
       }
 
-      const result = await response.json();
+      const keyFilesResult: IdentifyKeyFilesResponse =
+        await keyFilesResponse.json();
+      setKeyFiles(keyFilesResult.key_files);
+
+      // Then, use the key files in the analysis request
+      const analysisResponse = await fetch("/api/analysis", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          repo_url: repoUrl,
+          important_files: keyFilesResult.key_files,
+        }),
+      });
+
+      if (!analysisResponse.ok) {
+        throw new Error(`Analysis request failed: ${analysisResponse.status}`);
+      }
+
+      const result = await analysisResponse.json();
 
       // Cache the new results
       try {
@@ -109,5 +160,5 @@ export function useAnalysis(repoUrl: string) {
     }
   };
 
-  return { data, loading, error, refreshAnalysis };
+  return { data, loading, error, refreshAnalysis, keyFiles };
 }

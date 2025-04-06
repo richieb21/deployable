@@ -41,8 +41,8 @@ interface IssueResponse {
 export async function POST(request: NextRequest) {
   try {
     const body: CreateIssueRequest = await request.json();
-    const BASE_URL = "http://localhost:8000"; // Same as other API routes
-    const ENDPOINT = "/github/issues"; // This should match the backend endpoint
+    const BASE_URL = process.env.NEXT_BACKEND_URL_DEV;
+    const ENDPOINT = "/github/issues";
 
     if (!BASE_URL) {
       return NextResponse.json(
