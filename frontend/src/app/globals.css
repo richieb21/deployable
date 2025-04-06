@@ -24,3 +24,30 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+@keyframes pupil-movement {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(10px, -10px);
+  }
+  50% {
+    transform: translate(-10px, 10px);
+  }
+  75% {
+    transform: translate(7px, 7px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+.animate-pupil #pupil {
+  animation: pupil-movement 2s ease-in-out infinite;
+}
+
+/* Add a smooth transition for the animation */
+#pupil {
+  transition: transform 0.3s ease-in-out;
+}
