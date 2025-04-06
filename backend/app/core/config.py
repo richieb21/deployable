@@ -11,7 +11,13 @@ class Settings(BaseSettings):
     
     # API Keys
     GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "")
+    GITHUB_PAT: str = os.getenv("GITHUB_PAT", "")
+    GITHUB_PERSONAL_ACCESS_TOKEN: str = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN", "")
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    DEEPSEEK_API_KEY: str = os.getenv("DEEPSEEK_API_KEY", "")
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+    CLAUDE_API_KEY: str = os.getenv("CLAUDE_API_KEY", "")
+    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
     
     # Environment
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
@@ -29,6 +35,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "allow"  # This allows extra fields in the .env file
 
 settings = Settings()
 
