@@ -154,7 +154,7 @@ export default function StatsPage() {
           >
             <div className="max-w-5xl mx-auto flex items-center gap-4">
               <div
-                className={`text-xl font-semibold ${
+                className={`text-lg sm:text-xl font-semibold ${
                   theme === "dark" ? "text-white" : "text-gray-900"
                 } min-w-[40px] text-center`}
               >
@@ -191,17 +191,17 @@ export default function StatsPage() {
         onScoreUpdate={handleScoreUpdate}
       />
 
-      <div className="mt-16">
-        <div className="flex items-center mb-6 max-w-5xl mx-auto px-2">
+      <div className="mt-8 sm:mt-16">
+        <div className="flex flex-col sm:flex-row sm:items-center mb-4 sm:mb-6 max-w-5xl mx-auto px-2">
           <h2
-            className={`text-2xl font-bold ${
+            className={`text-xl sm:text-2xl font-bold mb-4 sm:mb-0 ${
               theme === "dark" ? "text-white" : "text-gray-900"
             }`}
           >
             Issues to Address
           </h2>
 
-          <div className="ml-auto flex items-center space-x-4">
+          <div className="sm:ml-auto flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
             <AnimatePresence>
               {showBulkActions && (
                 <motion.div
@@ -219,14 +219,14 @@ export default function StatsPage() {
                   </span>
                   <button
                     onClick={handleCompleteAll}
-                    className={`flex items-center px-4 py-2 ${
+                    className={`flex items-center px-3 sm:px-4 py-2 ${
                       theme === "dark"
                         ? "bg-[#2A2D31] text-gray-300 hover:bg-[#353A40]"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    } rounded transition-colors`}
+                    } rounded transition-colors text-sm`}
                   >
                     <svg
-                      className="w-4 h-4 mr-2"
+                      className="w-4 h-4 mr-1 sm:mr-2"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -246,14 +246,14 @@ export default function StatsPage() {
 
             <button
               onClick={handleSelectAll}
-              className={`flex items-center px-4 py-2 ${
+              className={`flex items-center px-3 sm:px-4 py-2 ${
                 theme === "dark"
                   ? "bg-gray-800 hover:bg-gray-700 text-white"
                   : "bg-gray-200 hover:bg-gray-300 text-gray-800"
-              } rounded transition-colors`}
+              } rounded transition-colors text-sm`}
             >
               <svg
-                className="w-4 h-4 mr-2"
+                className="w-4 h-4 mr-1 sm:mr-2"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
