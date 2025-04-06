@@ -51,6 +51,15 @@ async def create_issue(request: CreateIssueRequest):
                 detail=f"Repository '{request.owner}/{request.repo}' does not exist or is not accessible with your token"
             )
         
+        # Check if .deployable file exists
+        logger.info(f"Checking if .deployable file exists in {request.owner}/{request.repo}")
+        if not github_api_client.check_deployable_file_exists(request.owner, request.repo):
+            logger.error(f"Repository '{request.owner}/{request.repo}' does not have a .deployable file")
+            raise HTTPException(
+                status_code=403, 
+                detail=f"Repository '{request.owner}/{request.repo}' does not have a .deployable file in the root directory"
+            )
+        
         # Check if issues are enabled
         logger.info(f"Checking if issues are enabled for {request.owner}/{request.repo}")
         if not github_api_client.check_issues_enabled(request.owner, request.repo):

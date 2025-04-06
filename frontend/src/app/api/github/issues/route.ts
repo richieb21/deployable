@@ -78,8 +78,34 @@ export async function POST(request: NextRequest) {
         };
       }
 
+      // Check for .deployable file error in the detail field
+      if (
+        (errorData?.detail &&
+          (errorData.detail.includes(".deployable") ||
+            errorData.detail.toLowerCase().includes("deployable"))) ||
+        (errorText &&
+          (errorText.includes(".deployable") ||
+            errorText.toLowerCase().includes("deployable")))
+      ) {
+        console.log("Detected .deployable file missing error");
+        return NextResponse.json(
+          {
+            error: "Repository not enabled for Deployable",
+            details:
+              "This repository has not been enabled for Deployable. A .deployable file must be present in the repository root.",
+            originalError: errorData,
+          },
+          { status: 403 }
+        );
+      }
+
+      // Pass through the original error
       return NextResponse.json(
-        { error: "Failed to create GitHub issue", details: errorData },
+        {
+          error: "Failed to create GitHub issue",
+          details: errorData.detail || errorData.message || "Unknown error",
+          originalError: errorData,
+        },
         { status: response.status }
       );
     }

@@ -37,6 +37,21 @@ class GitHubAPIClient:
             logger.error(f"Error checking repository: {str(e)}")
             return False
     
+    def check_deployable_file_exists(self, owner: str, repo: str) -> bool:
+        """Check if the .deployable file exists in the repository root."""
+        url = f"{self.base_url}/repos/{owner}/{repo}/contents/.deployable"
+        try:
+            logger.info(f"Checking if .deployable file exists in: {owner}/{repo}")
+            response = requests.get(url, headers=self.headers)
+            exists = response.status_code == 200
+            logger.info(f".deployable file exists in {owner}/{repo}: {exists}")
+            if not exists:
+                logger.debug(f".deployable file check returned status {response.status_code}")
+            return exists
+        except Exception as e:
+            logger.error(f"Error checking .deployable file: {str(e)}")
+            return False
+    
     def check_issues_enabled(self, owner: str, repo: str) -> bool:
         """Check if issues are enabled for the repository."""
         url = f"{self.base_url}/repos/{owner}/{repo}"
@@ -61,6 +76,11 @@ class GitHubAPIClient:
         if not self.check_repository_exists(owner, repo):
             logger.error(f"Repository '{owner}/{repo}' does not exist or is not accessible")
             raise ValueError(f"Repository '{owner}/{repo}' does not exist or is not accessible with current token")
+        
+        # Then check if .deployable file exists
+        if not self.check_deployable_file_exists(owner, repo):
+            logger.error(f"Repository '{owner}/{repo}' does not have a .deployable file")
+            raise ValueError(f"Repository '{owner}/{repo}' does not have a .deployable file in the root directory")
         
         # Then check if issues are enabled
         if not self.check_issues_enabled(owner, repo):

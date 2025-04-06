@@ -21,6 +21,7 @@ import { AnimatePresence } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
 import IssueItem from "./IssueItem";
 import { AnimatedLogo } from "./AnimatedLogo";
+import ErrorModal from "./ErrorModal";
 
 // Get severity weight for sorting (higher number = higher severity)
 const getSeverityWeight = (severity: string): number => {
@@ -80,6 +81,17 @@ export const IssuesList = ({
   const [isCreatingIssue, setIsCreatingIssue] = useState<{
     [key: string]: boolean;
   }>({});
+  const [errorModal, setErrorModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    showExplanation?: boolean;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    showExplanation: false,
+  });
 
   // Load created issues from localStorage on mount
   useEffect(() => {
@@ -300,7 +312,41 @@ ${issue.category}
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create issue");
+        console.log("Error response data:", errorData); // Debug logging
+
+        // Check for .deployable file error in multiple possible locations
+        const isDeployableError =
+          errorData.error === "Repository not enabled for Deployable" ||
+          (errorData.details &&
+            (errorData.details.includes(".deployable") ||
+              errorData.details.includes("deployable"))) ||
+          (errorData.originalError &&
+            errorData.originalError.detail &&
+            (errorData.originalError.detail.includes(".deployable") ||
+              errorData.originalError.detail.includes("deployable")));
+
+        if (isDeployableError) {
+          setErrorModal({
+            isOpen: true,
+            title: "Repository Not Enabled",
+            message:
+              "This repository has not been enabled for Deployable.\n\nTo enable issue creation, please add a '.deployable' file to the root directory of your repository.",
+            showExplanation: true,
+          });
+          return; // Exit early
+        }
+
+        // For other errors, show a more generic message
+        setErrorModal({
+          isOpen: true,
+          title: "Error Creating Issue",
+          message:
+            errorData.error ||
+            errorData.details ||
+            (errorData.originalError && errorData.originalError.detail) ||
+            "Failed to create GitHub issue",
+        });
+        return; // Exit early
       }
 
       const data = await response.json();
@@ -315,11 +361,13 @@ ${issue.category}
       }));
     } catch (error) {
       console.error("Error creating GitHub issue:", error);
-      alert(
-        `Failed to create GitHub issue: ${
+      setErrorModal({
+        isOpen: true,
+        title: "Error Creating Issue",
+        message: `Failed to create GitHub issue: ${
           error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+        }`,
+      });
     } finally {
       // Clear loading state
       setIsCreatingIssue((prev) => ({ ...prev, [issueId]: false }));
@@ -392,6 +440,15 @@ ${issue.category}
           );
         })}
       </AnimatePresence>
+
+      {/* Error Modal */}
+      <ErrorModal
+        isOpen={errorModal.isOpen}
+        title={errorModal.title}
+        message={errorModal.message}
+        showExplanation={errorModal.showExplanation}
+        onClose={() => setErrorModal({ ...errorModal, isOpen: false })}
+      />
     </div>
   );
 };
