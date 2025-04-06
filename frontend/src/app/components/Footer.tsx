@@ -18,10 +18,10 @@ export const Footer = () => {
         color: theme === "dark" ? "#9ca3af" : "#6b7280",
         borderTop: theme === "dark" ? "none" : "1px solid #f3f4f6",
       }}
-      className="py-8"
+      className="py-6 sm:py-8"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center text-sm">
+        <div className="text-center text-xs sm:text-sm">
           © 2024 deployable. All rights reserved.
         </div>
       </div>

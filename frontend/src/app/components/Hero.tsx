@@ -65,10 +65,10 @@ export const Hero = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-48 pb-64">
-      <div className="text-center space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-32 md:pt-48 pb-32 md:pb-64">
+      <div className="text-center space-y-6 md:space-y-8">
         <h2
-          className="text-5xl sm:text-6xl font-bold max-w-3xl mx-auto leading-tight"
+          className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold max-w-3xl mx-auto leading-tight"
           style={{ color: theme === "dark" ? "#ffffff" : "#111827" }}
         >
           Ship with confidence, <br />
@@ -79,17 +79,17 @@ export const Hero = () => {
           </span>
         </h2>
         <p
-          className="text-xl max-w-2xl mx-auto"
+          className="text-base md:text-xl max-w-2xl mx-auto px-2"
           style={{ color: theme === "dark" ? "#d1d5db" : "#4b5563" }}
         >
           A free, instant AI-powered analysis of your repository to catch
           deployment issues before they catch you.
         </p>
-        {/*             A free tool to analyze your personal projects and applications to give you piece of mind before you hit deploy */}
+
         {/* CTA Section */}
         <form
           onSubmit={handleSubmit}
-          className="flex flex-col w-full max-w-2xl mx-auto gap-4 mt-12"
+          className="flex flex-col w-full max-w-2xl mx-auto gap-4 mt-8 md:mt-12 px-2"
         >
           <div className="flex flex-col sm:flex-row w-full gap-2">
             <div className="relative flex-grow">
@@ -97,8 +97,8 @@ export const Hero = () => {
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://github.com/richieb21/deployable"
-                className="w-full px-6 py-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="https://github.com/username/repository"
+                className="w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                 style={inputStyle}
                 disabled={isLoading}
               />
@@ -106,7 +106,7 @@ export const Hero = () => {
             <button
               type="submit"
               disabled={isLoading || !url}
-              className="px-8 py-4 rounded-xl font-semibold transition whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:transform hover:scale-105"
+              className="px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold transition whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:transform hover:scale-105 text-sm sm:text-base"
               style={buttonStyle}
             >
               {isLoading ? "Analyzing..." : "Analyze"}
