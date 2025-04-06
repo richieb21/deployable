@@ -101,14 +101,14 @@ const IssueItem = ({
           }`}
         ></div>
 
-        <div className="p-8 pl-10">
+        <div className="p-4 sm:p-6 md:p-8 pl-6 sm:pl-8 md:pl-10">
           <div
-            className="flex justify-between cursor-pointer"
+            className="flex flex-col sm:flex-row sm:justify-between cursor-pointer"
             onClick={() => handleToggleExpand(index)}
           >
-            <div className="flex-1">
+            <div className="flex-1 mb-4 sm:mb-0">
               <h3
-                className="text-lg font-semibold mb-2"
+                className="text-base sm:text-lg font-semibold mb-2"
                 style={{
                   color: theme === "dark" ? "white" : "#111827",
                 }}
@@ -116,7 +116,7 @@ const IssueItem = ({
                 {issue.title}
               </h3>
               <p
-                className="text-sm"
+                className="text-xs sm:text-sm break-words"
                 style={{
                   color: theme === "dark" ? "#9ca3af" : "#6b7280",
                 }}
@@ -124,19 +124,22 @@ const IssueItem = ({
                 {issue.file_path}
               </p>
             </div>
-            <div className="flex flex-col items-end space-y-4 ml-6">
-              <div className="flex items-center space-x-4">
+
+            {/* Category tag and chevron - now in separate div */}
+            <div className="flex flex-col sm:flex-col items-start sm:items-end sm:ml-6 mb-3 sm:mb-0">
+              <div className="flex items-center justify-between w-full sm:justify-end sm:space-x-3">
                 <span
-                  className="text-xs font-medium px-3 py-1 rounded"
+                  className="text-xs font-medium px-2 sm:px-3 py-1 rounded max-w-[150px] truncate"
                   style={{
                     backgroundColor: theme === "dark" ? "#1f2937" : "#f3f4f6",
                     color: theme === "dark" ? "#d1d5db" : "#4b5563",
                   }}
+                  title={issue.category} // Show full category on hover
                 >
                   {issue.category}
                 </span>
                 <svg
-                  className={`w-5 h-5 transition-transform duration-300 ${
+                  className={`w-5 h-5 transition-transform duration-300 flex-shrink-0 ${
                     expandedIssue === index ? "rotate-180" : ""
                   }`}
                   style={{
@@ -154,7 +157,9 @@ const IssueItem = ({
                   ></path>
                 </svg>
               </div>
-              <div className="flex items-center space-x-2">
+
+              {/* Action buttons in separate row on mobile */}
+              <div className="flex items-center space-x-2 mt-3 sm:mt-4 w-full sm:w-auto">
                 <button
                   onClick={(e) => createGitHubIssue(issue, issueId, e)}
                   disabled={isCreated || isCreatingIssue}
@@ -182,10 +187,10 @@ const IssueItem = ({
                       ? "#d1d5db"
                       : "#374151",
                   }}
-                  className="flex items-center px-4 py-2 rounded-md transition-colors duration-200 hover:bg-opacity-90"
+                  className="flex items-center px-2 sm:px-4 py-1 sm:py-2 rounded-md transition-colors duration-200 hover:bg-opacity-90 text-xs sm:text-sm flex-1 sm:flex-auto justify-center sm:justify-start"
                 >
                   <svg
-                    className={`w-4 h-4 mr-2 ${
+                    className={`w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0 ${
                       isCreated ? "text-green-400" : "text-gray-400"
                     }`}
                     fill="none"
@@ -228,7 +233,7 @@ const IssueItem = ({
                       </>
                     )}
                   </svg>
-                  <span className="text-sm">
+                  <span className="whitespace-nowrap">
                     {isCreated
                       ? "Issue Created"
                       : isCreatingIssue
@@ -238,7 +243,7 @@ const IssueItem = ({
                 </button>
                 <button
                   onClick={(e) => toggleIssueCompletion(issueId, e)}
-                  className="flex items-center px-4 py-2 rounded-md transition-colors duration-200"
+                  className="flex items-center px-2 sm:px-4 py-1 sm:py-2 rounded-md transition-colors duration-200 text-xs sm:text-sm flex-1 sm:flex-auto justify-center sm:justify-start"
                   style={{
                     backgroundColor: isCompleted
                       ? theme === "dark"
@@ -257,7 +262,7 @@ const IssueItem = ({
                   }}
                 >
                   <svg
-                    className={`w-4 h-4 mr-2 ${
+                    className={`w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0 ${
                       isCompleted ? "text-green-400" : "text-gray-400"
                     }`}
                     fill="none"
@@ -288,7 +293,7 @@ const IssueItem = ({
                       />
                     )}
                   </svg>
-                  <span className="text-sm">
+                  <span className="whitespace-nowrap">
                     {isCompleted ? "Completed" : "Complete"}
                   </span>
                 </button>

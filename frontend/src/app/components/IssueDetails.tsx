@@ -34,9 +34,9 @@ const IssueDetails = ({
   const { theme } = useTheme();
 
   return (
-    <div className="p-8 pl-10">
+    <div className="p-4 sm:p-6 md:p-8 pl-6 sm:pl-8 md:pl-10">
       <div
-        className="pl-8 border-l-2"
+        className="pl-4 sm:pl-6 md:pl-8 border-l-2"
         style={{
           borderLeftColor: isCompleted
             ? "rgba(20, 83, 45, 0.3)"
@@ -58,10 +58,10 @@ const IssueDetails = ({
             <p
               className={`${
                 theme === "dark" ? "text-green-400" : "text-green-700"
-              } flex items-center`}
+              } flex items-center text-sm`}
             >
               <svg
-                className="w-5 h-5 mr-2"
+                className="w-4 h-4 mr-2"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -91,7 +91,7 @@ const IssueDetails = ({
         <p
           className={`${
             theme === "dark" ? "text-gray-300" : "text-gray-700"
-          } mb-6`}
+          } mb-6 text-sm sm:text-base`}
         >
           {issue.description}
         </p>
@@ -100,14 +100,14 @@ const IssueDetails = ({
         {issue.action_items && issue.action_items.length > 0 && (
           <div className="mb-6">
             <h4
-              className={`text-sm font-medium ${
+              className={`text-xs sm:text-sm font-medium ${
                 theme === "dark" ? "text-white" : "text-gray-900"
               } mb-3`}
             >
               Action Items:
             </h4>
             <ul
-              className={`list-disc pl-5 text-sm ${
+              className={`list-disc pl-5 text-xs sm:text-sm ${
                 theme === "dark" ? "text-gray-300" : "text-gray-700"
               } space-y-2`}
             >
@@ -123,7 +123,7 @@ const IssueDetails = ({
           (issue.code_snippets.before || issue.code_snippets.after) && (
             <div className="mb-6">
               <h4
-                className={`text-sm font-medium ${
+                className={`text-xs sm:text-sm font-medium ${
                   theme === "dark" ? "text-white" : "text-gray-900"
                 } mb-3`}
               >
@@ -142,7 +142,7 @@ const IssueDetails = ({
                   <pre
                     className={`${
                       theme === "dark" ? "bg-[#0A0A0A]" : "bg-gray-50"
-                    } p-4 rounded text-xs overflow-x-auto ${
+                    } p-2 sm:p-4 rounded text-xs overflow-x-auto ${
                       theme === "dark" ? "text-gray-300" : "text-gray-800"
                     }`}
                   >
@@ -163,7 +163,7 @@ const IssueDetails = ({
                   <pre
                     className={`${
                       theme === "dark" ? "bg-[#0A0A0A]" : "bg-gray-50"
-                    } p-4 rounded text-xs overflow-x-auto ${
+                    } p-2 sm:p-4 rounded text-xs overflow-x-auto ${
                       theme === "dark" ? "text-gray-300" : "text-gray-800"
                     }`}
                   >
@@ -178,19 +178,19 @@ const IssueDetails = ({
         {issue.references && issue.references.length > 0 && (
           <div>
             <h4
-              className={`text-sm font-medium ${
+              className={`text-xs sm:text-sm font-medium ${
                 theme === "dark" ? "text-white" : "text-gray-900"
               } mb-3`}
             >
               References:
             </h4>
             <ul
-              className={`list-disc pl-5 text-sm ${
+              className={`list-disc pl-5 text-xs sm:text-sm ${
                 theme === "dark" ? "text-gray-300" : "text-gray-700"
               } space-y-2`}
             >
               {issue.references.map((ref, i) => (
-                <li key={i}>
+                <li key={i} className="break-words">
                   <a
                     href={ref}
                     target="_blank"

@@ -70,7 +70,14 @@ const CircleGraph = ({
   if (!mounted) return null;
 
   // Calculate the circumference of the circle
-  const radius = size === "large" ? 70 : 45;
+  const radius =
+    size === "large"
+      ? window.innerWidth < 640
+        ? 55
+        : 70
+      : window.innerWidth < 640
+      ? 35
+      : 45;
   const circumference = 2 * Math.PI * radius;
 
   // Calculate the dash offset based on the display value (0-100)
@@ -85,7 +92,9 @@ const CircleGraph = ({
     <div className="flex flex-col items-center">
       <div
         className={`relative ${
-          size === "large" ? "w-56 h-56" : "w-36 h-36"
+          size === "large"
+            ? "w-36 h-36 sm:w-44 sm:h-44 md:w-56 md:h-56"
+            : "w-28 h-28 sm:w-36 sm:h-36"
         } flex items-center justify-center`}
       >
         {/* SVG Gradient Definitions */}
@@ -105,7 +114,15 @@ const CircleGraph = ({
             cy="50%"
             r={radius}
             stroke="currentColor"
-            strokeWidth={size === "large" ? "14" : "10"}
+            strokeWidth={
+              size === "large"
+                ? window.innerWidth < 640
+                  ? "10"
+                  : "14"
+                : window.innerWidth < 640
+                ? "8"
+                : "10"
+            }
             fill="transparent"
             className={theme === "dark" ? "text-[#2A2A2A]" : "text-gray-200"}
           />
@@ -118,7 +135,15 @@ const CircleGraph = ({
             cy="50%"
             r={radius}
             stroke={`url(#${gradientId})`}
-            strokeWidth={size === "large" ? "14" : "10"}
+            strokeWidth={
+              size === "large"
+                ? window.innerWidth < 640
+                  ? "10"
+                  : "14"
+                : window.innerWidth < 640
+                ? "8"
+                : "10"
+            }
             fill="transparent"
             strokeDasharray={circumference}
             strokeDashoffset={dashOffset}
@@ -132,15 +157,17 @@ const CircleGraph = ({
 
         {/* Value text */}
         <div
-          className={`${size === "large" ? "text-5xl" : "text-3xl"} font-bold ${
-            theme === "dark" ? "text-white" : "text-gray-900"
-          }`}
+          className={`${
+            size === "large"
+              ? "text-3xl sm:text-4xl md:text-5xl"
+              : "text-2xl sm:text-3xl"
+          } font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}
         >
           {displayValue}
         </div>
       </div>
       {size !== "large" && (
-        <div className="mt-2 text-base font-medium text-gray-500 dark:text-gray-400">
+        <div className="mt-2 text-sm sm:text-base font-medium text-gray-500 dark:text-gray-400">
           {metric.name}
         </div>
       )}
@@ -378,7 +405,7 @@ export const StatsDisplay = ({
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Main metric with description - First block */}
       <div
-        className={`rounded-xl p-8 shadow-lg border transition-colors duration-300 ${
+        className={`rounded-xl p-4 sm:p-6 md:p-8 shadow-lg border transition-colors duration-300 ${
           mainMetric.value === 100
             ? "bg-green-900/10 border-green-900/20"
             : theme === "dark"
@@ -386,7 +413,7 @@ export const StatsDisplay = ({
             : "bg-white border-gray-200"
         }`}
       >
-        <div className="flex flex-col md:flex-row items-start justify-between gap-8">
+        <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 md:gap-8">
           <div className="flex flex-col items-center">
             <CircleGraph
               metric={mainMetric}
@@ -394,16 +421,16 @@ export const StatsDisplay = ({
               shouldAnimate={changedIssueId !== null}
             />
             <div
-              className="mt-2 text-xl font-semibold"
+              className="mt-2 text-base sm:text-lg font-semibold"
               style={{ color: theme === "dark" ? "#9ca3af" : "#4b5563" }}
             >
               Overall Score
             </div>
           </div>
 
-          <div className="md:w-2/3 md:pt-8">
+          <div className="md:w-2/3 text-center md:text-left md:pt-4">
             <h3
-              className="text-2xl font-bold mb-3"
+              className="text-xl sm:text-2xl font-bold mb-3"
               style={{ color: theme === "dark" ? "#ffffff" : "#111827" }}
             >
               {mainMetric.value >= 80
@@ -413,7 +440,7 @@ export const StatsDisplay = ({
                 : "Critical Issues Found"}
             </h3>
             <p
-              className="text-lg leading-relaxed"
+              className="text-base sm:text-lg leading-relaxed"
               style={{ color: theme === "dark" ? "#9ca3af" : "#4b5563" }}
             >
               {getDescription()}
@@ -424,7 +451,7 @@ export const StatsDisplay = ({
 
       {/* Smaller metrics row - Second block */}
       <div
-        className={`rounded-xl p-8 shadow-lg border transition-colors duration-300 ${
+        className={`rounded-xl p-4 sm:p-6 md:p-8 shadow-lg border transition-colors duration-300 ${
           metrics.every((metric) => metric.value === 100)
             ? "bg-green-900/10 border-green-900/20"
             : theme === "dark"
@@ -433,12 +460,12 @@ export const StatsDisplay = ({
         }`}
       >
         <h3
-          className="text-xl font-semibold mb-6 px-4"
+          className="text-lg sm:text-xl font-semibold mb-6 px-2 sm:px-4 text-center"
           style={{ color: theme === "dark" ? "#ffffff" : "#111827" }}
         >
           Category Scores
         </h3>
-        <div className="flex justify-center items-center gap-12 mx-auto">
+        <div className="flex flex-wrap justify-center items-center gap-6 sm:gap-8 md:gap-12 mx-auto">
           {metrics.map((metric, index) => (
             <div
               key={`${metric.name}-${index}`}

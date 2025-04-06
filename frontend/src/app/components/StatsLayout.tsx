@@ -29,10 +29,10 @@ export const StatsLayout = ({
         variant={theme === "dark" ? "dark" : "light"}
         onRefresh={onRefresh}
       />
-      <div className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
+      <div className="flex-grow w-full mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8 sm:py-16">
+        <div className="text-center mb-8 sm:mb-12">
           <h1
-            className="text-4xl font-bold mb-4"
+            className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 px-2 break-words"
             style={{ color: theme === "dark" ? "#ffffff" : "#111827" }}
           >
             {repoName}
