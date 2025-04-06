@@ -1,0 +1,10 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer black square with rounded edges -->
+  <rect x="0" y="0" width="200" height="200" rx="30" ry="30" fill="black" />
+
+  <!-- White circle to create the "hole" effect -->
+  <circle cx="100" cy="100" r="60" fill="white" />
+
+  <!-- Inner black square inside the circle with slightly less rounded edges -->
+  <rect id="pupil" x="80" y="80" width="40" height="40" rx="10" ry="10" fill="black" />
+</svg>
