@@ -198,7 +198,7 @@ class OpenAIService(BaseLanguageModel):
             raise
 
 class GroqService(BaseLanguageModel):
-    """Tencent Hunyuan Implementation"""
+    """Groq Implementation"""
     def _initialize_client(self):
         self.api_key = self.api_key or os.getenv("GROQ_API_KEY")
         if not self.api_key:

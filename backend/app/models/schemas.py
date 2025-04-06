@@ -60,7 +60,7 @@ class AnalysisHeartbeatEvent(BaseModel):
 
 class AnalysisRequest(BaseModel):
     repo_url: HttpUrl = Field(..., description="GitHub repository URL to analyze")
-    analysis_id: Optional[str] = None  # if not provided, we will not stream events
+    analysis_id: Optional[str] = None  # if not provided, we will not stream events, backwords compatible
 
 
 class AnalysisResponse(BaseModel):
