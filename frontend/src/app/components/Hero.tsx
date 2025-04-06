@@ -43,9 +43,9 @@ export const Hero = () => {
           border: "none",
         }
       : {
-          background: "linear-gradient(135deg, #047857 0%, #065F46 100%)",
+          background: "linear-gradient(135deg, #ea580c 0%, #ea580c 100%)",
           color: "white",
-          boxShadow: "0 4px 14px rgba(5, 150, 105, 0.25)",
+          boxShadow: "0 4px 14px #ea580c",
           border: "none",
         };
 
@@ -72,7 +72,9 @@ export const Hero = () => {
           style={{ color: theme === "dark" ? "#ffffff" : "#111827" }}
         >
           Ship with confidence, <br />
-          <span className="text-green-600 dark:text-green-500">
+          <span
+            className={theme === "dark" ? "text-green-600" : "text-orange-600"}
+          >
             deploy without surprises
           </span>
         </h2>

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { AnalysisResponse } from "../types/api";
 import { useTheme } from "../context/ThemeContext";
+import { AnimatedLogo } from "./AnimatedLogo";
 
 type StatMetric = {
   name: string;
@@ -359,16 +360,7 @@ export const StatsDisplay = ({
 
   // If loading, show a loading state instead of the graphs
   if (loading) {
-    return (
-      <div className="max-w-5xl mx-auto bg-[#1A1817] dark:bg-[#1A1817] bg-white/90 rounded-xl p-8 flex justify-center items-center min-h-[300px] border border-gray-200 dark:border-transparent">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-800 dark:border-white mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400 text-lg">
-            Analyzing repository...
-          </p>
-        </div>
-      </div>
-    );
+    return <AnimatedLogo theme={theme} />;
   }
 
   // Generate description based on overall score

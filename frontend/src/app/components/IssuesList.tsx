@@ -20,6 +20,7 @@ import { useState, useEffect, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
 import IssueItem from "./IssueItem";
+import { AnimatedLogo } from "./AnimatedLogo";
 
 // Get severity weight for sorting (higher number = higher severity)
 const getSeverityWeight = (severity: string): number => {
@@ -342,30 +343,7 @@ ${issue.category}
   });
 
   if (loading) {
-    return (
-      <div
-        className="max-w-5xl mx-auto rounded-xl p-8 flex justify-center items-center min-h-[200px] border"
-        style={{
-          backgroundColor: theme === "dark" ? "#1A1817" : "white",
-          borderColor: theme === "dark" ? "transparent" : "#e5e7eb",
-        }}
-      >
-        <div className="text-center">
-          <div
-            className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 mb-4"
-            style={{
-              borderColor: theme === "dark" ? "white" : "#1f2937",
-            }}
-          ></div>
-          <p
-            style={{ color: theme === "dark" ? "#9ca3af" : "#4b5563" }}
-            className="text-lg"
-          >
-            Loading issues...
-          </p>
-        </div>
-      </div>
-    );
+    return <AnimatedLogo theme={theme} />;
   }
 
   if (!recommendations || recommendations.length === 0) {
