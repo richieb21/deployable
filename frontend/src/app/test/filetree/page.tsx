@@ -1,9 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ImportantFiles } from "@/app/components/ImportantFiles";
 import { FileTree } from "../../components/FileTree";
 import { IdentifyKeyFilesResponse } from "@/app/types/api";
+
+interface AnalysisEvent {
+  type: "PROGRESS" | "COMPLETE" | "HEARTBEAT";
+  chunk_index?: number;
+  files?: string[];
+  recommendations_count?: number;
+  recommendations?: any[];
+  analysis_timestamp?: string;
+}
 
 export default function FileTreeTestPage() {
   const [url, setUrl] = useState("");
@@ -19,6 +28,86 @@ export default function FileTreeTestPage() {
     backend: [],
     infra: [],
   });
+  const [highlightedFiles, setHighlightedFiles] = useState<Set<string>>(
+    new Set()
+  );
+  const [analysisId, setAnalysisId] = useState<string | null>(null);
+
+  const startAnalysis = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      setHighlightedFiles(new Set());
+
+      // 1. Start the analysis stream
+      const startResponse = await fetch("http://localhost:8000/stream/start", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ repo_url: url }),
+      });
+
+      if (!startResponse.ok) {
+        throw new Error("Failed to start analysis");
+      }
+
+      const { analysis_id } = await startResponse.json();
+      setAnalysisId(analysis_id);
+
+      // 2. Connect to the event stream
+      const eventSource = new EventSource(
+        `http://localhost:8000/stream/analysis/${analysis_id}`,
+        { withCredentials: false }
+      );
+
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data) as AnalysisEvent;
+        console.log("Received event:", data);
+
+        if (data.type === "PROGRESS" && data.files) {
+          console.log("Highlighting files:", data.files);
+          setHighlightedFiles((prev) => {
+            const newSet = new Set([...prev, ...data.files!]);
+            console.log("Current highlighted files:", Array.from(newSet));
+            return newSet;
+          });
+        }
+
+        if (data.type === "COMPLETE") {
+          eventSource.close();
+          setIsLoading(false);
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error("EventSource error:", error);
+        eventSource.close();
+        setError("Stream connection error");
+        setIsLoading(false);
+      };
+
+      // 3. Start the actual analysis
+      const analysisResponse = await fetch("http://localhost:8000/analysis", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          repo_url: url,
+          analysis_id,
+        }),
+      });
+
+      if (!analysisResponse.ok) {
+        throw new Error("Analysis failed to start");
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      setError(err instanceof Error ? err.message : "Unknown error occurred");
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +179,20 @@ export default function FileTreeTestPage() {
           </form>
         </div>
 
+        {files.length > 0 && (
+          <div className="mb-4">
+            <button
+              onClick={startAnalysis}
+              disabled={isLoading || !url}
+              className="px-6 py-3 bg-orange-500 text-white rounded-lg font-semibold 
+                        hover:bg-orange-600 transition whitespace-nowrap
+                        disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? "Analyzing..." : "Start Analysis"}
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-xl font-semibold text-black dark:text-white mb-4">
@@ -109,7 +212,10 @@ export default function FileTreeTestPage() {
               Important Files
             </h2>
             {files.length > 0 ? (
-              <ImportantFiles key_files={keyFiles} />
+              <ImportantFiles
+                key_files={keyFiles}
+                highlightedFiles={highlightedFiles}
+              />
             ) : (
               <p className="text-gray-500 dark:text-gray-400">
                 No repository analyzed yet

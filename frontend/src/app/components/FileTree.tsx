@@ -12,9 +12,14 @@ interface FileNode {
 interface FileTreeProps {
   files: string[];
   className?: string;
+  highlightedFiles?: Set<string>;
 }
 
-export const FileTree = ({ files, className = "" }: FileTreeProps) => {
+export const FileTree = ({
+  files,
+  className = "",
+  highlightedFiles = new Set(),
+}: FileTreeProps) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
     new Set()
   );
@@ -141,6 +146,7 @@ export const FileTree = ({ files, className = "" }: FileTreeProps) => {
   const renderNode = (node: FileNode, level: number = 0, index: number = 0) => {
     const { name, path, type } = node;
     const isExpanded = expandedFolders.has(path);
+    const isHighlighted = highlightedFiles.has(path);
 
     return (
       <div
@@ -152,11 +158,17 @@ export const FileTree = ({ files, className = "" }: FileTreeProps) => {
         className={level === 0 ? "animate-slideDown" : ""}
       >
         <div
-          className="flex items-center space-x-1 py-1 px-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer group"
+          className={`flex items-center space-x-1 py-1 px-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer group ${
+            isHighlighted ? "bg-green-100 dark:bg-green-900/20" : ""
+          }`}
           onClick={() => type === "directory" && toggleFolder(path)}
         >
           {renderFileIcon(type, path, name)}
-          <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-colors">
+          <span
+            className={`text-sm text-gray-700 dark:text-gray-300 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-colors ${
+              isHighlighted ? "text-green-600 dark:text-green-400" : ""
+            }`}
+          >
             {name}
           </span>
         </div>

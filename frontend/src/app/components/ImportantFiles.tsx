@@ -8,11 +8,15 @@ interface ImportantFilesProps {
     backend: string[];
     infra: string[];
   };
+  highlightedFiles?: Set<string>;
 }
 
 type StackCategory = "frontend" | "backend" | "infra";
 
-export const ImportantFiles = ({ key_files }: ImportantFilesProps) => {
+export const ImportantFiles = ({
+  key_files,
+  highlightedFiles = new Set(),
+}: ImportantFilesProps) => {
   const [visibleSections, setVisibleSections] = useState<StackCategory[]>([]);
   const [visibleFiles, setVisibleFiles] = useState<
     Record<StackCategory, string[]>
@@ -71,7 +75,15 @@ export const ImportantFiles = ({ key_files }: ImportantFilesProps) => {
             : "translate-y-[-8px] opacity-0"
         }`}
       >
-        <span className="text-sm text-gray-700 dark:text-gray-300">{file}</span>
+        <span
+          className={`text-sm text-gray-700 dark:text-gray-300 px-2 py-1 rounded transition-colors ${
+            highlightedFiles.has(file)
+              ? "bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400"
+              : ""
+          }`}
+        >
+          {file}
+        </span>
       </div>
     ));
   };
@@ -98,10 +110,49 @@ export const ImportantFiles = ({ key_files }: ImportantFilesProps) => {
   };
 
   return (
-    <div className="p-4">
+    <div className="space-y-4">
       {renderSection("frontend", key_files.frontend)}
       {renderSection("backend", key_files.backend)}
       {renderSection("infra", key_files.infra)}
+    </div>
+  );
+};
+
+interface KeyFileCategoryProps {
+  category: string;
+  title: string;
+  files: string[];
+  highlightedFiles: Set<string>;
+}
+
+const KeyFileCategory = ({
+  category,
+  title,
+  files,
+  highlightedFiles,
+}: KeyFileCategoryProps) => {
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        {title}
+      </h3>
+      <ul className="space-y-2">
+        {files.map((file) => {
+          const isHighlighted = highlightedFiles.has(file);
+          return (
+            <li
+              key={file}
+              className={`text-sm text-gray-600 dark:text-gray-400 px-2 py-1 rounded transition-colors ${
+                isHighlighted
+                  ? "bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400"
+                  : ""
+              }`}
+            >
+              {file}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 };
