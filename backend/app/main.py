@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.endpoints import analysis, github, streaming
+from app.api.endpoints import analysis, github, streaming, twitterbot, twitter_test
 from app.core.logging_config import setup_logging
 
 import warnings
@@ -19,7 +19,7 @@ app.add_middleware(
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST"],
-    allow_headers=["*"],
+    allow_headers=["*"]
 )
 
 warnings.filterwarnings(
@@ -31,6 +31,8 @@ warnings.filterwarnings(
 app.include_router(analysis.router)
 app.include_router(github.router)
 app.include_router(streaming.router)
+app.include_router(twitterbot.router)
+app.include_router(twitter_test.router)
 
 @app.get("/")
 async def root():
