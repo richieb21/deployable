@@ -8,6 +8,7 @@ import re
 from abc import ABC, abstractmethod
 import hashlib
 from app.core.dependencies import TTL_EXPIRATION
+from app.core.config import settings
 
 logger = getLogger(__name__)
 
@@ -53,21 +54,25 @@ class BaseLanguageModel(ABC):
         pass
     
     def call_model_with_cache(self, prompt: str, redis_client=None):
-
-        if not redis_client:
+        """Call the model with optional Redis caching"""
+        if not settings.USE_REDIS or not redis_client:
+            logger.info("Redis caching is disabled, calling model directly")
             return self.call_model(prompt)
 
         prompt_hash = hashlib.sha256(prompt.encode()).hexdigest()
         cache_key = f"llm:{self.__class__.__name__}:{self.model}:{prompt_hash}"
 
-        cached_response = redis_client.get(cache_key)
-        if cached_response:
-            return cached_response
-        
-        response = self.call_model(prompt)
-
-        redis_client.set(cache_key, response, ex=TTL_EXPIRATION) 
-        return response
+        try:
+            cached_response = redis_client.get(cache_key)
+            if cached_response:
+                return cached_response
+            
+            response = self.call_model(prompt)
+            redis_client.set(cache_key, response, ex=TTL_EXPIRATION) 
+            return response
+        except Exception as e:
+            logger.warning(f"Redis cache operation failed: {str(e)}, falling back to direct model call")
+            return self.call_model(prompt)
 
     def identify_files_prompt(self, files):
         """Create a prompt to identify important deployment files"""
@@ -130,7 +135,7 @@ class BaseLanguageModel(ABC):
           }
         ]
         
-        Focus ONLY on significant deployment issues. Ignore minor code style issues.
+        Focus ONLY on significant deployment issues. Ignore minor code style issues. Assume that any outside dependencies are implemented correctly but note their signfiicant if applicable.
         """
         prompt += "\n\nFiles to analyze:\n\n"
         for file in files:

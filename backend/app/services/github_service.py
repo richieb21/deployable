@@ -322,6 +322,10 @@ class GithubService:
 
     def _cache_file_contents(self, owner: str, repo: str, path: str, contents: str):
         """Store file contents of a repositories files into the Redis cache"""
+        if not self.redis_client:
+            logger.info("Redis client not available, skipping cache")
+            return
+            
         try:
             cache_key = self._get_cache_key(owner, repo, path)
             self.redis_client.set(cache_key, contents, ex=TTL_EXPIRATION)
@@ -331,12 +335,16 @@ class GithubService:
 
     def _get_cache_contents(self, owner: str, repo: str, path: str):
         """Retrieve file contents of a repositories files into the Redis cache"""
+        if not self.redis_client:
+            logger.info("Redis client not available, skipping cache")
+            return None
+            
         try:
             cache_key = self._get_cache_key(owner, repo, path)
             return self.redis_client.get(cache_key)
         except redis.exceptions.ConnectionError:
             logger.warning("Redis connection failed - caching disabled")
-            pass
+            return None
     
     def _get_file_contents(self, owner: str, repo: str, path: str) -> Optional[Dict[str, str]]:
         """
@@ -351,13 +359,14 @@ class GithubService:
             Dictionary with file path and content or None if not found
         """
 
-        cache_contents = self._get_cache_contents(owner, repo, path)
-
-        if cache_contents:
-            return {
-                "path" : path,
-                "content" : cache_contents
-            }
+        # Only try to get from cache if Redis is available
+        if self.redis_client:
+            cache_contents = self._get_cache_contents(owner, repo, path)
+            if cache_contents:
+                return {
+                    "path" : path,
+                    "content" : cache_contents
+                }
 
         api_url = f"{self.base_url}/repos/{owner}/{repo}/contents/{path}"
         response = requests.get(api_url, headers=self._get_headers())
@@ -366,7 +375,9 @@ class GithubService:
             data = response.json()
             if data.get('encoding') == "base64":
                 content = base64.b64decode(data["content"]).decode('utf-8')
-                self._cache_file_contents(owner, repo, path, content)
+                # Only try to cache if Redis is available
+                if self.redis_client:
+                    self._cache_file_contents(owner, repo, path, content)
                 return {
                     "path": path,
                     "content": content

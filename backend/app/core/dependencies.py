@@ -21,7 +21,12 @@ except Exception as e:
     redis_pool = None
 
 def get_redis_client():
-    """Gets a Redis client connected to the connection pool"""
+    """Gets a Redis client connected to the connection pool"""    
+    if not settings.USE_REDIS:
+        logger.info("Redis is disabled via USE_REDIS=false")
+        yield None
+        return
+        
     if redis_pool is None:
         logger.warning("Redis pool is not available - yielding None")
         yield None
