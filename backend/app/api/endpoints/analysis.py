@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import List, Dict, Any, Optional
 import logging
 import json
@@ -14,6 +14,9 @@ from app.services.LLM_service import create_language_service
 from app.services.multithreading_service import LLMClientPool
 from app.core.dependencies import get_redis_client
 from app.api.endpoints.streaming import analysis_streams
+
+from app.core.limiter import limiter
+from app.core.config import settings
 
 from redis import Redis
 
@@ -123,9 +126,12 @@ async def process_batch(executor, chunk, client_pool, chunk_index, analysis_id, 
         logger.error(f"Error processing chunk {chunk_index}: {str(e)}")
         return chunk_index, []
 
+
 @router.post("/", response_model=AnalysisResponse)
+@limiter.limit(settings.ANALYSIS_RATE_LIMIT)
 async def analyze_repository(
-    request: AnalysisRequest,
+    request: Request,
+    analysis_request: AnalysisRequest,
     redis_client: Redis = Depends(get_redis_client)
 ):
     """
@@ -133,17 +139,13 @@ async def analyze_repository(
     Can operate in streaming mode if analysis_id is provided, otherwise runs synchronously.
     """
     overall_start_time = time.time()
-    logger.info(f"Starting analysis for repository: {request.repo_url}")
+    logger.info(f"Starting analysis for repository: {analysis_request.repo_url}")
 
     github_service = GithubService(redis_client=redis_client)
     
     try:
-        repo_url = str(request.repo_url)        
-        important_files = request.important_files
-        
-        logger.info("TYPEEEEEEE")
-        logger.info(type(important_files))
-        logger.info(important_files)
+        repo_url = str(analysis_request.repo_url)        
+        important_files = analysis_request.important_files
 
         files_to_analyze = []
         files_to_analyze.extend(important_files.frontend)
@@ -164,14 +166,14 @@ async def analyze_repository(
         
         analysis_start = time.time()
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            if request.analysis_id: # we need to stream
-                queue = analysis_streams.get(request.analysis_id)
+            if analysis_request.analysis_id: # we need to stream
+                queue = analysis_streams.get(analysis_request.analysis_id)
                 if not queue:
                     raise HTTPException(status_code=404, detail="Analysis stream not found")
                 
                 tasks = []
                 for i, chunk in enumerate(file_chunks):
-                    task = process_batch(executor, chunk, client_pool, i, request.analysis_id, queue)
+                    task = process_batch(executor, chunk, client_pool, i, analysis_request.analysis_id, queue)
                     tasks.append(task)
                 
                 results = await asyncio.gather(*tasks)
@@ -219,14 +221,16 @@ async def analyze_repository(
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 @router.post("/key-files", response_model=IdentifyKeyFilesResponse)
+@limiter.limit(settings.KEY_FILES_RATE_LIMIT)
 async def identify_key_files(
-    request: IdentifyKeyFilesRequest,
+    request: Request,
+    key_files_request: IdentifyKeyFilesRequest,
     redis_client: Redis = Depends(get_redis_client)
 ):
     """
     Identify all files and key files within a Github Repository
     """
-    repo_url = str(request.repo_url)
+    repo_url = str(key_files_request.repo_url)
 
     github_service = GithubService(redis_client=redis_client)
     all_files = github_service.list_filenames(repo_url)

@@ -23,8 +23,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     
     # Rate limiting
-    RATE_LIMIT_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "5"))
-    RATE_LIMIT_PER_HOUR: int = int(os.getenv("RATE_LIMIT_PER_HOUR", "100"))
+    ANALYSIS_RATE_LIMIT: str = os.getenv("ANALYSIS_RATE_LIMIT", "60/minute;2500/hour")
+    KEY_FILES_RATE_LIMIT: str = os.getenv("KEY_FILES_RATE_LIMIT", "60/minute;2500/hour")
 
     #Redis config
     USE_REDIS: bool = os.getenv("USE_REDIS", "false").lower() == "true"
