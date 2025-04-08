@@ -64,6 +64,7 @@ class AnalysisRequest(BaseModel):
         default_factory=KeyFiles,
         description="Key Files for Analysis"
     )
+    is_reprompt: Optional[bool] = False
     analysis_id: Optional[str] = None  # if not provided, we will not stream events, backwords compatible
 
 
@@ -76,6 +77,7 @@ class AnalysisResponse(BaseModel):
 
 class IdentifyKeyFilesRequest(BaseModel):
     repo_url: str
+    is_reprompt: Optional[bool] = False
 
 class IdentifyKeyFilesResponse(BaseModel):
     all_files: List[str]

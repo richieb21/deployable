@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 import logging
 import json
 import concurrent.futures
@@ -22,8 +22,6 @@ from redis import Redis
 
 logger = logging.getLogger(__name__)
 
-# time to decouple key files from analysis endpoint, provide those things as a request parameter
-
 router = APIRouter(
     prefix="/analysis",
     tags=["analysis"],
@@ -33,7 +31,7 @@ router = APIRouter(
 CURRENT_LLM_PROIVDER = "quasar"
 recommendations_lock = threading.Lock()
 
-def analyze_file_batch(files_batch: List[Dict[str, str]], client_pool, batch_index: int, analysis_id: str) -> List[Dict[str, Any]]:
+def analyze_file_batch(files_batch: List[Dict[str, str]], client_pool, batch_index: int) -> List[Dict[str, Any]]:
     """
     Analyze a batch of files using a client from the pool.
     """
@@ -141,6 +139,10 @@ async def analyze_repository(
     overall_start_time = time.time()
     logger.info(f"Starting analysis for repository: {analysis_request.repo_url}")
 
+    if getattr(analysis_request, 'is_reprompt', False):
+        logger.info("Reprompt requested, bypassing cache")
+        redis_client = None
+
     github_service = GithubService(redis_client=redis_client)
     
     try:
@@ -231,6 +233,10 @@ async def identify_key_files(
     Identify all files and key files within a Github Repository
     """
     repo_url = str(key_files_request.repo_url)
+
+    if getattr(key_files_request, 'is_reprompt', False): # if we are reprompting, don't use redis client so we regenerate everything
+        logger.info("Reprompt requested, bypassing cache")
+        redis_client = None
 
     github_service = GithubService(redis_client=redis_client)
     all_files = github_service.list_filenames(repo_url)
