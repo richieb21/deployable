@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.endpoints import analysis, github, streaming, twitterbot, twitter_test
+from app.api.endpoints import analysis, github, streaming, twitterbot, twitter_test, stats
 from app.core.logging_config import setup_logging
 from app.core.limiter import limiter
 from slowapi import _rate_limit_exceeded_handler
@@ -39,6 +39,7 @@ app.include_router(github.router)
 app.include_router(streaming.router)
 app.include_router(twitterbot.router)
 app.include_router(twitter_test.router)
+app.include_router(stats.router)
 
 @app.get("/")
 async def root():

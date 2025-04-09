@@ -7,14 +7,15 @@ from datetime import datetime
 import threading
 import time
 import asyncio
+import redis.asyncio as redis_async
 
 from app.models.schemas import AnalysisRequest, AnalysisResponse, IdentifyKeyFilesRequest, IdentifyKeyFilesResponse
 from app.services.github_service import GithubService
 from app.services.LLM_service import create_language_service
 from app.services.multithreading_service import LLMClientPool
-from app.core.dependencies import get_redis_client
+from app.core.dependencies import get_redis_client, get_redis_async_client
 from app.api.endpoints.streaming import analysis_streams
-
+from app.services.stats_service import StatService
 from app.core.limiter import limiter
 from app.core.config import settings
 
@@ -130,7 +131,8 @@ async def process_batch(executor, chunk, client_pool, chunk_index, analysis_id, 
 async def analyze_repository(
     request: Request,
     analysis_request: AnalysisRequest,
-    redis_client: Redis = Depends(get_redis_client)
+    redis_client: Redis = Depends(get_redis_client),
+    async_redis_client: redis_async.Redis = Depends(get_redis_async_client)
 ):
     """
     Analyze a GitHub repository for deployment readiness using multiple parallel LLM clients.
@@ -190,7 +192,7 @@ async def analyze_repository(
                 })
             else: # don't stream events, process synchronously in parallel
                 futures = {
-                    executor.submit(analyze_file_batch, chunk, client_pool, i, None): i 
+                    executor.submit(analyze_file_batch, chunk, client_pool, i): i 
                     for i, chunk in enumerate(file_chunks)
                 }
                 
@@ -211,6 +213,18 @@ async def analyze_repository(
         overall_duration = time.time() - overall_start_time
         logger.info(f"Total analysis completed in {overall_duration:.2f} seconds")
         
+        stats_service = StatService(redis_client=async_redis_client)
+        key_files = analysis_request.important_files
+        num_files = len(key_files.frontend) + len(key_files.backend) + len(key_files.infra)
+        try:
+            await stats_service.increment_analysis_stats(
+                num_files=num_files,
+                num_recommendations=len(all_recommendations)
+            )
+            logger.info("Successfully incremented analysis stats")
+        except Exception as e:
+            logger.error(f"Error incrementing analysis stats: {str(e)}")
+
         return AnalysisResponse(
             repository=repo_url,
             recommendations=all_recommendations,
