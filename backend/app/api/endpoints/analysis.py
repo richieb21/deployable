@@ -107,7 +107,7 @@ async def process_batch(executor, chunk, client_pool, chunk_index, analysis_id, 
     Takes a future from a thread executor and turns it into an asynchronous future, allowing 
     asynchronous functions (queuing events) to be ran concurrently
     """
-    future = executor.submit(analyze_file_batch, chunk, client_pool, chunk_index, analysis_id)
+    future = executor.submit(analyze_file_batch, chunk, client_pool, chunk_index)
     try:
         chunk_recommendations = await asyncio.wrap_future(future)
         
