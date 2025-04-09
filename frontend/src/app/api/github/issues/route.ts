@@ -53,9 +53,6 @@ export async function POST(request: NextRequest) {
 
     const url = `${BASE_URL}${ENDPOINT}`;
 
-    console.log("Sending request to:", url);
-    console.log("Request body:", JSON.stringify(body, null, 2));
-
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -87,7 +84,7 @@ export async function POST(request: NextRequest) {
           (errorText.includes(".deployable") ||
             errorText.toLowerCase().includes("deployable")))
       ) {
-        console.log("Detected .deployable file missing error");
+        console.error("Detected .deployable file missing error");
         return NextResponse.json(
           {
             error: "Repository not enabled for Deployable",
@@ -99,7 +96,6 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Pass through the original error
       return NextResponse.json(
         {
           error: "Failed to create GitHub issue",
