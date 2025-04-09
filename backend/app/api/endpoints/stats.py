@@ -1,4 +1,5 @@
 from fastapi import APIRouter, WebSocket, Depends
+from starlette.websockets import WebSocketState
 from app.core.dependencies import get_redis_async_client
 import redis.asyncio as redis_async
 import json
@@ -12,8 +13,12 @@ async def stats_websocket(
     websocket: WebSocket,
     redis_client: redis_async.Redis = Depends(get_redis_async_client)
 ):
+    pubsub = None
+    is_closing = False
+    
     try:
         await websocket.accept()
+        logger.info("WebSocket connection accepted")
 
         try:
             pipe = redis_client.pipeline()
@@ -35,30 +40,38 @@ async def stats_websocket(
             await websocket.close(code=1011, reason="Failed to get initial stats")
             return
 
-        # Setup Redis PubSub with correct channel
         pubsub = redis_client.pubsub()
         await pubsub.subscribe("deployable:stats:updates") 
 
-        while True:
+        while not is_closing:
             try:
                 message = await pubsub.get_message(ignore_subscribe_messages=True)
                 if message and message["type"] == "message":
-                    stats = json.loads(message["data"])
-                    await websocket.send_json(stats)
+                    try:
+                        stats = json.loads(message["data"])
+                        await websocket.send_json(stats)
+                    except Exception as e:
+                        logger.error(f"Error sending message: {str(e)}")
+                        is_closing = True
+                        break
             except Exception as e:
                 logger.error(f"Error in message loop: {str(e)}")
+                is_closing = True
                 break
                 
     except Exception as e:
         logger.error(f"WebSocket error: {str(e)}")
     finally:
+        is_closing = True
         if pubsub:
             try:
-                await pubsub.unsubscribe("deployable:stats:updates")  # Use correct channel
+                await pubsub.unsubscribe("deployable:stats:updates")
+                await pubsub.close()
             except Exception as e:
                 logger.error(f"Error unsubscribing: {str(e)}")
         try:
-            await websocket.close()
+            if websocket.client_state == WebSocketState.CONNECTED:
+                await websocket.close()
         except Exception as e:
             logger.error(f"Error closing websocket: {str(e)}")
         logger.info("WebSocket connection closed")

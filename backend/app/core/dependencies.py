@@ -59,10 +59,10 @@ def get_redis_client():
         yield client
     except redis.exceptions.ConnectionError as e:
         logger.warning(f"Redis connection failed: {str(e)}")
-        yield None  # Yield None instead of failing
+        yield None  
     except Exception as e:
         logger.warning(f"Redis error: {str(e)}")
-        yield None  # Yield None instead of failing
+        yield None  
     finally:
         pass
 
