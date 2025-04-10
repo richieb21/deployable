@@ -154,7 +154,15 @@ class GithubService:
         """
 
         api_url = f"{self.base_url}/repos/{owner}/{repo_name}"
-        response = requests.get(api_url, headers=self._get_headers())
+
+        try:
+            response = requests.get(api_url, headers=self._get_headers())
+        except requests.exceptions.Timeout:
+            logger.error(f"Timeout occurred while requesting: {api_url}")
+            return None
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Requests failed for {api_url}: {e}")
+            return None
 
         if response.status_code == 200:
             repo_info = response.json()
@@ -192,7 +200,15 @@ class GithubService:
             Commit SHA or None if not found
         """
         api_url = f"{self.base_url}/repos/{owner}/{repo}/commits/{branch}"
-        response = requests.get(api_url, headers=self._get_headers())
+
+        try:
+            response = requests.get(api_url, headers=self._get_headers())
+        except requests.exceptions.Timeout:
+            logger.error(f"Timeout occurred while requesting: {api_url}")
+            return None
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Requests failed for {api_url}: {e}")
+            return None
 
         if response.status_code == 200:
             return response.json().get("sha")
@@ -219,7 +235,15 @@ class GithubService:
         api_url = (
             f"{self.base_url}/repos/{owner}/{repo}/git/trees/{tree_sha}?recursive=1"
         )
-        response = requests.get(api_url, headers=self._get_headers())
+
+        try:
+            response = requests.get(api_url, headers=self._get_headers())
+        except requests.exceptions.Timeout:
+            logger.error(f"Timeout occurred while requesting: {api_url}")
+            return None
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Requests failed for {api_url}: {e}")
+            return None
 
         if response.status_code == 200:
             return response.json()
@@ -377,7 +401,15 @@ class GithubService:
                 return {"path": path, "content": cache_contents}
 
         api_url = f"{self.base_url}/repos/{owner}/{repo}/contents/{path}"
-        response = requests.get(api_url, headers=self._get_headers())
+
+        try:
+            response = requests.get(api_url, headers=self._get_headers())
+        except requests.exceptions.Timeout:
+            logger.error(f"Timeout occurred while requesting: {api_url}")
+            return None
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Requests failed for {api_url}: {e}")
+            return None
 
         if response.status_code == 200:
             data = response.json()
