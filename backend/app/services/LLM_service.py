@@ -126,19 +126,20 @@ class BaseLanguageModel(ABC):
         Focus ONLY on issues within these categories:
         SECURITY, PERFORMANCE, INFRASTRUCTURE, RELIABILITY, COMPLIANCE, COST
 
-        Use the following severity levels with these specific meanings:
-        - **CRITICAL**: Issues that will likely prevent deployment, cause major security vulnerabilities, or lead to system failure (e.g., hardcoded production secrets, fundamentally broken container config).
-        - **HIGH**: Issues that pose significant security risks, severe performance bottlenecks, or major reliability problems if not addressed (e.g., missing input validation on public endpoints, inefficient database queries in critical paths, lack of basic error handling).
-        - **MEDIUM**: Important best practices violations that could lead to future problems, minor security risks, or degraded performance/reliability (e.g., missing rate limiting, inadequate logging, suboptimal caching).
-        - **LOW**: Minor improvements, suggestions for better maintainability, or adherence to best practices with less immediate impact (e.g., dependency updates, minor config optimizations).
+        Use the following severity levels with these **strict** meanings:
+        - **CRITICAL**: **ONLY** issues that will **definitely prevent deployment** or cause **immediate, catastrophic failure or major security breach** (e.g., hardcoded production secrets in code, fatally incorrect Dockerfile command, SQL injection vulnerability in public endpoint). Be very conservative with this level.
+        - **HIGH**: **ONLY** issues that pose a **clear and present danger** to production stability, security, or performance if deployed (e.g., missing essential input validation on critical APIs, N+1 database query in a core feature, no error handling on vital external calls, potential secrets leak via verbose errors). **Do NOT use HIGH for general best practice violations, missing comments, minor config tweaks, or potential future problems.**
+        - **MEDIUM**: Important best practices violations that could lead to future problems, introduce moderate security risks, or noticeably degrade performance/reliability under load (e.g., missing rate limiting, inadequate logging for key operations, slightly suboptimal caching, using deprecated library versions without known critical flaws). This should be used for most standard recommendations.
+        - **LOW**: Minor improvements, suggestions for better maintainability, or adherence to best practices with less immediate impact (e.g., dependency updates for non-critical flaws, minor config optimizations, code clarity suggestions).
         - **INFO**: Observations or points of interest that don't necessarily require action but are relevant context.
 
         **IMPORTANT INSTRUCTIONS:**
-        1.  **Prioritize Impact:** Focus ONLY on issues that represent a tangible risk or obstacle to deploying and running this application in production.
-        2.  **Ignore Minor Style:** Do NOT report minor code style issues, formatting inconsistencies, or variable naming preferences.
-        3.  **Actionability:** Ensure each identified issue has clear, actionable steps for resolution.
-        4.  **Context Matters:** Assume standard libraries/dependencies are functional unless their *configuration* or *usage* poses a specific deployment risk (e.g., connecting to a dev database in prod config).
-        5.  **Be Concise:** Provide brief titles and descriptions.
+        1.  **Be Conservative with Severity:** Critically evaluate if an issue truly warrants CRITICAL or HIGH severity based on the strict definitions above. **When in doubt, prefer MEDIUM or LOW.** Avoid exaggerating the impact of findings.
+        2.  **Prioritize Blocking Issues:** Focus primarily on problems that would actively block a deployment or cause immediate, significant issues post-deployment.
+        3.  **Ignore Trivial Matters:** Do NOT report minor code style issues, formatting, naming preferences, missing comments, or lack of documentation unless it directly causes a functional or security bug.
+        4.  **Actionability is Key:** Ensure each identified issue has clear, actionable steps for resolution.
+        5.  **Context Matters:** Assume standard libraries are functional unless their *configuration* or *usage* poses a specific deployment risk. Don't flag theoretical "what-ifs" unless there's concrete evidence in the code.
+        6.  **Be Concise:** Provide brief titles and descriptions.
 
         Return ONLY a valid JSON array of issues in the following format. Do not include any other text or explanations outside the JSON structure:
         [
