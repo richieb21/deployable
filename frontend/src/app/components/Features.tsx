@@ -1,74 +1,127 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useTheme } from "../context/ThemeContext";
+
 export const Features = () => {
+  const [stats, setStats] = useState({
+    repos: 0,
+    files: 0,
+    recommendations: 0,
+  });
+  const [status, setStatus] = useState("connecting");
+  const { theme } = useTheme();
+
+  useEffect(() => {
+    const ws = new WebSocket("ws://localhost:8000/ws/stats");
+
+    ws.onopen = () => {
+      setStatus("connected");
+      console.log("Connected to WebSocket");
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("Received:", data);
+        setStats(data);
+      } catch (error) {
+        console.error(
+          "Error parsing WebSocket message:",
+          error,
+          "Raw data:",
+          event.data
+        );
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error("WebSocket error:", error);
+      setStatus("error");
+    };
+
+    ws.onclose = (event) => {
+      console.log("WebSocket closed:", event);
+      setStatus("error");
+    };
+
+    return () => {
+      console.log("Closing WebSocket connection");
+      ws.close();
+    };
+  }, []);
+
   return (
-    <div className="bg-white dark:bg-black py-24">
+    <div className="py-24 bg-gradient-to-b from-transparent to-gray-100 dark:to-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-          <div className="space-y-4">
-            <div className="h-12 w-12 rounded-lg bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
-              <svg
-                className="h-6 w-6 text-orange-600 dark:text-orange-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          {/* Left Column */}
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <h2 className="text-4xl sm:text-5xl font-bold leading-tight">
+                Ship with confidence,
+                <br />
+                <span
+                  className={
+                    theme === "dark" ? "text-green-600" : "text-orange-600"
+                  }
+                >
+                  deploy without surprises
+                </span>
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-300">
+                Our AI-powered analysis helps you catch deployment issues before
+                they catch you.
+              </p>
             </div>
-            <h3 className="text-xl font-semibold">Security First</h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              Identify security vulnerabilities and credential exposure before
-              deployment.
-            </p>
+
+            {/* Live Stats */}
+            <div className="space-y-4">
+              <div className="text-sm text-gray-500">
+                {status === "connected"
+                  ? "Live Stats"
+                  : "Connecting to live stats..."}
+              </div>
+              <div className="grid grid-cols-3 gap-8">
+                <div className="text-center">
+                  <div
+                    className="text-3xl font-bold"
+                    style={{ color: theme === "dark" ? "#10B981" : "#ea580c" }}
+                  >
+                    {stats.repos}
+                  </div>
+                  <div className="text-sm text-gray-500">Repos Analyzed</div>
+                </div>
+                <div className="text-center">
+                  <div
+                    className="text-3xl font-bold"
+                    style={{ color: theme === "dark" ? "#10B981" : "#ea580c" }}
+                  >
+                    {stats.files}
+                  </div>
+                  <div className="text-sm text-gray-500">Files Processed</div>
+                </div>
+                <div className="text-center">
+                  <div
+                    className="text-3xl font-bold"
+                    style={{ color: theme === "dark" ? "#10B981" : "#ea580c" }}
+                  >
+                    {stats.recommendations}
+                  </div>
+                  <div className="text-sm text-gray-500">Recommendations</div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="h-12 w-12 rounded-lg bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
-              <svg
-                className="h-6 w-6 text-orange-600 dark:text-orange-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                />
-              </svg>
+          {/* Right Column - Demo Video */}
+          <div className="relative aspect-video rounded-xl overflow-hidden shadow-2xl">
+            <div className="absolute inset-0 bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-2xl font-bold mb-2">Demo Video</div>
+                <div className="text-sm text-gray-500">Coming soon</div>
+              </div>
             </div>
-            <h3 className="text-xl font-semibold">Performance Optimized</h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              Get actionable insights to improve your applications performance.
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <div className="h-12 w-12 rounded-lg bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
-              <svg
-                className="h-6 w-6 text-orange-600 dark:text-orange-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold">Best Practices</h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              Ensure your codebase follows deployment best practices and
-              standards.
-            </p>
           </div>
         </div>
       </div>
