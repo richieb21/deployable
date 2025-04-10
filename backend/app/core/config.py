@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     REDIS_DB: str = os.environ.get("REDIS_DB", "0")
 
     @model_validator(mode="after")
-    def set_cors_origins(self):
+    def validate_settings(self):
         if self.ENV == "development":
             self.CORS_ORIGINS = ["http://localhost:8000", "http://127.0.0.1:3000"]
         else:
@@ -46,7 +46,24 @@ class Settings(BaseSettings):
                 print("Warning: FRONTEND_PROD_URL not set")
                 self.CORS_ORIGINS = []
         
+        if self.ENV != "development":
+            missing_keys = []
+
+            if not self.GITHUB_PAT:
+                missing_keys.append("GITHUB_PAT")
+            if not self.OPENROUTER_API_KEY:
+                missing_keys.append("OPENROUTER_API_KEY")
+
+            if missing_keys:
+                raise ValueError(
+                    f"Missing critical environment variabels: {missing_keys}"
+                )
+
         return self
+    
+
+    
+    
 
 
 settings = Settings()
