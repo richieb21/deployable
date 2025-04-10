@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "../context/ThemeContext";
 
@@ -13,53 +13,8 @@ export const Hero = () => {
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState({
-    repos: 0,
-    files: 0,
-    recommendations: 0,
-  });
-  const [status, setStatus] = useState("connecting");
   const router = useRouter();
   const { theme } = useTheme();
-
-  useEffect(() => {
-    const ws = new WebSocket("ws://localhost:8000/ws/stats");
-
-    ws.onopen = () => {
-      setStatus("connected");
-      console.log("Connected to WebSocket");
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        console.log("Received:", data);
-        setStats(data);
-      } catch (error) {
-        console.error(
-          "Error parsing WebSocket message:",
-          error,
-          "Raw data:",
-          event.data
-        );
-      }
-    };
-
-    ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
-      setStatus("error");
-    };
-
-    ws.onclose = (event) => {
-      console.log("WebSocket closed:", event);
-      setStatus("error");
-    };
-
-    return () => {
-      console.log("Closing WebSocket connection");
-      ws.close();
-    };
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,8 +22,6 @@ export const Hero = () => {
     setIsLoading(true);
 
     try {
-      // Instead of doing the analysis here, just navigate to the stats page
-      // The analysis will be performed there via the useAnalysis hook
       router.push(`/stats?repo=${encodeURIComponent(url)}`);
     } catch (error) {
       console.error("Error:", error);
@@ -94,27 +47,20 @@ export const Hero = () => {
           border: "none",
         };
 
-  // Define input styles based on theme
-  const inputStyle = {
-    backgroundColor: theme === "dark" ? "#1f2937" : "white",
-    color: theme === "dark" ? "#f9fafb" : "#111827",
-    borderWidth: 2,
-    borderStyle: "solid",
-    borderColor:
-      theme === "dark" ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.2)",
-    boxShadow:
-      theme === "dark"
-        ? "0 4px 12px rgba(0, 0, 0, 0.3)"
-        : "0 4px 12px rgba(0, 0, 0, 0.08)",
-    fontWeight: 500,
-  };
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-32 md:pt-48 pb-32 md:pb-64">
       <div className="text-center space-y-6 md:space-y-8">
         <h2
-          className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold max-w-3xl mx-auto leading-tight"
-          style={{ color: theme === "dark" ? "#ffffff" : "#111827" }}
+          className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold max-w-none mx-auto leading-tight"
+          style={{
+            color: theme === "dark" ? "transparent" : "#111827",
+            backgroundImage:
+              theme === "dark"
+                ? "linear-gradient(135deg, #ffffff 0%, #9ca3af 100%)"
+                : "none",
+            backgroundClip: theme === "dark" ? "text" : "unset",
+            WebkitBackgroundClip: theme === "dark" ? "text" : "unset",
+          }}
         >
           deployable
         </h2>
@@ -132,66 +78,59 @@ export const Hero = () => {
           className="flex flex-col w-full max-w-2xl mx-auto gap-4 mt-8 md:mt-12 px-2"
         >
           <div className="flex flex-col sm:flex-row w-full gap-2">
-            <div className="relative flex-grow">
+            <div className="relative flex-grow group">
               <input
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://github.com/username/repository"
-                className="w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
-                style={inputStyle}
+                className={`w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl focus:outline-none text-sm sm:text-base relative z-10 ${
+                  theme === "dark"
+                    ? "bg-[#1a1a1a] text-white placeholder:text-gray-500 border-[#333]"
+                    : "bg-white text-gray-900 placeholder:text-gray-400 border-gray-200"
+                } border-2 transition-colors`}
                 disabled={isLoading}
               />
+              {/* Animated border effect - only show in dark mode */}
+              {theme === "dark" && (
+                <>
+                  <div className="absolute -inset-[2px] rounded-xl z-0 bg-gradient-to-r from-transparent via-green-500/50 to-transparent group-hover:animate-shine" />
+                  <div
+                    className={`absolute inset-0 rounded-xl z-[5] bg-[#1a1a1a]`}
+                  />
+                  <div className="absolute inset-[2px] rounded-lg z-[6] bg-gradient-to-r from-transparent via-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                </>
+              )}
             </div>
             <button
               type="submit"
               disabled={isLoading || !url}
-              className="px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold transition whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:transform hover:scale-105 text-sm sm:text-base"
+              className="px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold transition whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 hover:transform hover:scale-105 text-sm sm:text-base relative group overflow-hidden"
               style={buttonStyle}
             >
-              {isLoading ? "Analyzing..." : "Analyze"}
+              <span className="relative z-10">
+                {isLoading ? "Analyzing..." : "Analyze"}
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
             </button>
           </div>
           {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
         </form>
 
-        {/* Live Stats Section */}
-        <div className="flex flex-col items-center gap-4 mt-8">
-          <div className="text-sm text-gray-500">
-            {status === "connected"
-              ? "Live Stats"
-              : "Connecting to live stats..."}
-          </div>
-          <div className="flex gap-8">
-            <div className="text-center">
-              <div
-                className="text-2xl font-bold"
-                style={{ color: theme === "dark" ? "#10B981" : "#ea580c" }}
-              >
-                {stats.repos}
-              </div>
-              <div className="text-sm text-gray-500">Repos Analyzed</div>
-            </div>
-            <div className="text-center">
-              <div
-                className="text-2xl font-bold"
-                style={{ color: theme === "dark" ? "#10B981" : "#ea580c" }}
-              >
-                {stats.files}
-              </div>
-              <div className="text-sm text-gray-500">Files Processed</div>
-            </div>
-            <div className="text-center">
-              <div
-                className="text-2xl font-bold"
-                style={{ color: theme === "dark" ? "#10B981" : "#ea580c" }}
-              >
-                {stats.recommendations}
-              </div>
-              <div className="text-sm text-gray-500">Recommendations</div>
-            </div>
-          </div>
-        </div>
+        {/* Add keyframe animation for the shine effect */}
+        <style jsx global>{`
+          @keyframes shine {
+            from {
+              transform: translateX(-100%);
+            }
+            to {
+              transform: translateX(100%);
+            }
+          }
+          .animate-shine {
+            animation: shine 2s infinite;
+          }
+        `}</style>
       </div>
     </div>
   );
