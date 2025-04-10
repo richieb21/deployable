@@ -13,6 +13,8 @@ from app.core.logging_config import setup_logging
 from app.core.limiter import limiter
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+import os
+from dotenv import load_dotenv
 
 import warnings
 
@@ -39,11 +41,20 @@ warnings.filterwarnings(
     "ignore", message="urllib3 .* only supports OpenSSL .*", category=UserWarning
 )
 
+load_dotenv()
+
+TWITTER_ENABLED = os.getenv("TWITTER_ENABLED", "false").lower() == "true"
+
 app.include_router(analysis.router)
 app.include_router(github.router)
 app.include_router(streaming.router)
-app.include_router(twitterbot.router)
-app.include_router(twitter_test.router)
+
+if TWITTER_ENABLED:
+    app.include_router(twitterbot.router)
+    app.include_router(twitter_test.router)
+    # Only initialize Twitter stream when feature flag is enabled
+    twitterbot.init_twitter()
+
 app.include_router(stats.router)
 
 

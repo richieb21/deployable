@@ -22,12 +22,15 @@ export const Header = ({ variant = "dark", onRefresh }: HeaderProps) => {
   const effectiveVariant =
     variant === "dark" || theme === "dark" ? "dark" : "light";
 
+  // Define header styles based on page and theme
+  const headerStyles = isStatsPage
+    ? effectiveVariant === "dark"
+      ? "bg-[#121212]/80 backdrop-blur-md"
+      : "bg-[#f9fafb]/80 backdrop-blur-md"
+    : ""; // No background, blur, or border on landing page
+
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 backdrop-blur-md z-10 ${
-        effectiveVariant === "dark" ? "bg-[#121212]/80" : "bg-[#f9fafb]/80"
-      }`}
-    >
+    <header className={`fixed top-0 left-0 right-0 z-10 ${headerStyles}`}>
       <div className="px-4 sm:px-6 py-4 flex justify-between items-center">
         <Link href="/" className="flex items-center gap-2">
           <Image
@@ -48,7 +51,7 @@ export const Header = ({ variant = "dark", onRefresh }: HeaderProps) => {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex gap-6 text-sm text-gray-400 items-center">
+        <nav className="hidden md:flex gap-6 text-sm items-center">
           {/* Show refresh button only on stats page */}
           {isStatsPage && onRefresh && (
             <button
@@ -73,24 +76,30 @@ export const Header = ({ variant = "dark", onRefresh }: HeaderProps) => {
           )}
           <a
             href="#"
-            className={`hover:${
-              effectiveVariant === "dark" ? "text-white" : "text-gray-900"
+            className={`${
+              effectiveVariant === "dark"
+                ? "text-gray-400 hover:text-white"
+                : "text-gray-600 hover:text-orange-600"
             } transition-colors`}
           >
             Documentation
           </a>
           <a
             href="#"
-            className={`hover:${
-              effectiveVariant === "dark" ? "text-white" : "text-gray-900"
+            className={`${
+              effectiveVariant === "dark"
+                ? "text-gray-400 hover:text-white"
+                : "text-gray-600 hover:text-orange-600"
             } transition-colors`}
           >
             GitHub
           </a>
           <a
             href="#"
-            className={`hover:${
-              effectiveVariant === "dark" ? "text-white" : "text-gray-900"
+            className={`${
+              effectiveVariant === "dark"
+                ? "text-gray-400 hover:text-white"
+                : "text-gray-600 hover:text-orange-600"
             } transition-colors`}
           >
             Contact
@@ -137,7 +146,13 @@ export const Header = ({ variant = "dark", onRefresh }: HeaderProps) => {
       {mobileMenuOpen && (
         <div
           className={`md:hidden px-4 py-3 ${
-            effectiveVariant === "dark" ? "bg-[#121212]" : "bg-white"
+            isStatsPage
+              ? effectiveVariant === "dark"
+                ? "bg-[#121212]/80 backdrop-blur-md"
+                : "bg-[#f9fafb]/80 backdrop-blur-md"
+              : effectiveVariant === "dark"
+                ? "bg-[#121212]/50"
+                : "bg-white/50"
           }`}
         >
           <nav className="flex flex-col gap-4 text-sm">
@@ -168,10 +183,10 @@ export const Header = ({ variant = "dark", onRefresh }: HeaderProps) => {
             <a
               href="#"
               className={`py-2 ${
-                effectiveVariant === "dark" ? "text-gray-300" : "text-gray-700"
-              } hover:${
-                effectiveVariant === "dark" ? "text-white" : "text-gray-900"
-              }`}
+                effectiveVariant === "dark"
+                  ? "text-gray-400 hover:text-white"
+                  : "text-gray-600 hover:text-orange-600"
+              } transition-colors`}
               onClick={() => setMobileMenuOpen(false)}
             >
               Documentation
@@ -179,10 +194,10 @@ export const Header = ({ variant = "dark", onRefresh }: HeaderProps) => {
             <a
               href="#"
               className={`py-2 ${
-                effectiveVariant === "dark" ? "text-gray-300" : "text-gray-700"
-              } hover:${
-                effectiveVariant === "dark" ? "text-white" : "text-gray-900"
-              }`}
+                effectiveVariant === "dark"
+                  ? "text-gray-400 hover:text-white"
+                  : "text-gray-600 hover:text-orange-600"
+              } transition-colors`}
               onClick={() => setMobileMenuOpen(false)}
             >
               GitHub
@@ -190,10 +205,10 @@ export const Header = ({ variant = "dark", onRefresh }: HeaderProps) => {
             <a
               href="#"
               className={`py-2 ${
-                effectiveVariant === "dark" ? "text-gray-300" : "text-gray-700"
-              } hover:${
-                effectiveVariant === "dark" ? "text-white" : "text-gray-900"
-              }`}
+                effectiveVariant === "dark"
+                  ? "text-gray-400 hover:text-white"
+                  : "text-gray-600 hover:text-orange-600"
+              } transition-colors`}
               onClick={() => setMobileMenuOpen(false)}
             >
               Contact
