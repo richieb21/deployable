@@ -180,10 +180,13 @@ def start_stream_listener():
     except Exception as e:
         logger.error(f"Error in Twitter stream: {e}")
 
+# Don't start the stream listener automatically on import
+# start_stream_listener()
 
-# Start the stream listener when the module is imported
-start_stream_listener()
-
+# Add init function that will be called when the router is included
+def init_twitter():
+    """Initialize Twitter functionality when router is included"""
+    start_stream_listener()
 
 @router.post("/tweet", response_model=TweetResponse)
 async def send_tweet(request: TweetRequest):

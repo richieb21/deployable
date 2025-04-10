@@ -22,8 +22,15 @@ export const Header = ({ variant = "dark", onRefresh }: HeaderProps) => {
   const effectiveVariant =
     variant === "dark" || theme === "dark" ? "dark" : "light";
 
+  // Define header styles based on page and theme
+  const headerStyles = isStatsPage
+    ? effectiveVariant === "dark"
+      ? "bg-[#121212]/80 backdrop-blur-md"
+      : "bg-[#f9fafb]/80 backdrop-blur-md"
+    : ""; // No background, blur, or border on landing page
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-10">
+    <header className={`fixed top-0 left-0 right-0 z-10 ${headerStyles}`}>
       <div className="px-4 sm:px-6 py-4 flex justify-between items-center">
         <Link href="/" className="flex items-center gap-2">
           <Image
@@ -139,7 +146,13 @@ export const Header = ({ variant = "dark", onRefresh }: HeaderProps) => {
       {mobileMenuOpen && (
         <div
           className={`md:hidden px-4 py-3 ${
-            effectiveVariant === "dark" ? "bg-[#121212]/50" : "bg-white/50"
+            isStatsPage
+              ? effectiveVariant === "dark"
+                ? "bg-[#121212]/80 backdrop-blur-md"
+                : "bg-[#f9fafb]/80 backdrop-blur-md"
+              : effectiveVariant === "dark"
+                ? "bg-[#121212]/50"
+                : "bg-white/50"
           }`}
         >
           <nav className="flex flex-col gap-4 text-sm">

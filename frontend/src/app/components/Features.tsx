@@ -1,7 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTheme } from "../context/ThemeContext";
+import { motion, useSpring, useTransform } from "framer-motion";
+
+// Component to animate numbers
+const AnimatedNumber = ({ value }: { value: number }) => {
+  const spring = useSpring(value, {
+    mass: 0.8,
+    stiffness: 75,
+    damping: 15,
+  });
+  const display = useTransform(spring, (currentValue) =>
+    Math.round(currentValue)
+  );
+
+  useEffect(() => {
+    spring.set(value);
+  }, [spring, value]);
+
+  return <motion.span>{display}</motion.span>;
+};
 
 export const Features = () => {
   const [stats, setStats] = useState({
@@ -10,6 +29,7 @@ export const Features = () => {
     recommendations: 0,
   });
   const { theme } = useTheme();
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:8000/ws/stats");
@@ -47,19 +67,40 @@ export const Features = () => {
     };
   }, []);
 
+  // Effect for Intersection Observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          videoRef.current?.play();
+        } else {
+          videoRef.current?.pause();
+        }
+      },
+      {
+        threshold: 0.5, // Trigger when 50% of the video is visible
+      }
+    );
+
+    const currentVideoRef = videoRef.current;
+    if (currentVideoRef) {
+      observer.observe(currentVideoRef);
+    }
+
+    return () => {
+      if (currentVideoRef) {
+        observer.unobserve(currentVideoRef);
+      }
+    };
+  }, []);
+
   return (
-    <div className="relative min-h-screen flex items-center bg-gradient-to-b from-transparent via-gray-50/50 dark:via-gray-900/50 to-transparent overflow-hidden">
+    <div className="relative min-h-screen flex items-center bg-gradient-to-b from-transparent via-transparent to-transparent overflow-hidden">
       {/* Background Glows */}
       {theme === "dark" && (
         <>
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full filter blur-3xl opacity-50 -z-10 animate-pulse-slow" />
           <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-green-500/10 rounded-full filter blur-3xl opacity-40 -z-10 animate-pulse-slow animation-delay-2000" />
-        </>
-      )}
-      {theme === "light" && (
-        <>
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-orange-500/5 rounded-full filter blur-3xl opacity-60 -z-10 animate-pulse-slow" />
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-orange-400/5 rounded-full filter blur-3xl opacity-50 -z-10 animate-pulse-slow animation-delay-2000" />
         </>
       )}
 
@@ -86,7 +127,7 @@ export const Features = () => {
               <div className="text-sm font-medium flex items-center gap-2">
                 <span
                   className={
-                    theme === "dark" ? "text-gray-400" : "text-gray-600"
+                    theme === "dark" ? "text-gray-400" : "text-gray-900"
                   }
                 >
                   Live Stats
@@ -98,30 +139,49 @@ export const Features = () => {
               <div className="grid grid-cols-3 gap-8">
                 <div className="text-center">
                   <div
-                    className="text-4xl font-bold mb-2"
-                    style={{ color: theme === "dark" ? "#10B981" : "#ea580c" }}
+                    className={`text-4xl font-bold mb-2 ${
+                      theme === "dark" ? "text-green-500" : "text-gray-900"
+                    }`}
                   >
-                    {stats.repos}
+                    <AnimatedNumber value={stats.repos} />
                   </div>
-                  <div className="text-sm font-medium text-gray-400">Repos</div>
+                  <div
+                    className={`text-sm font-medium ${
+                      theme === "dark" ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    Repos
+                  </div>
                 </div>
                 <div className="text-center">
                   <div
-                    className="text-4xl font-bold mb-2"
-                    style={{ color: theme === "dark" ? "#10B981" : "#ea580c" }}
+                    className={`text-4xl font-bold mb-2 ${
+                      theme === "dark" ? "text-green-500" : "text-gray-900"
+                    }`}
                   >
-                    {stats.files}
+                    <AnimatedNumber value={stats.files} />
                   </div>
-                  <div className="text-sm font-medium text-gray-400">Files</div>
+                  <div
+                    className={`text-sm font-medium ${
+                      theme === "dark" ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    Files
+                  </div>
                 </div>
                 <div className="text-center">
                   <div
-                    className="text-4xl font-bold mb-2"
-                    style={{ color: theme === "dark" ? "#10B981" : "#ea580c" }}
+                    className={`text-4xl font-bold mb-2 ${
+                      theme === "dark" ? "text-green-500" : "text-gray-900"
+                    }`}
                   >
-                    {stats.recommendations}
+                    <AnimatedNumber value={stats.recommendations} />
                   </div>
-                  <div className="text-sm font-medium text-gray-400">
+                  <div
+                    className={`text-sm font-medium ${
+                      theme === "dark" ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
                     Recommendations
                   </div>
                 </div>
@@ -130,20 +190,7 @@ export const Features = () => {
           </div>
 
           {/* Right Column - Demo Video */}
-          <div className="relative aspect-video rounded-xl overflow-hidden shadow-2xl bg-gray-200/10 dark:bg-gray-800/10 backdrop-blur-sm">
-            <video
-              className="absolute inset-0 w-full h-full object-cover"
-              src="https://yangstevenwebsite.s3.us-east-1.amazonaws.com/laudure.mp4"
-              controls
-              poster="/video-placeholder.jpg"
-            >
-              <source
-                src="https://yangstevenwebsite.s3.us-east-1.amazonaws.com/laudure.mp4"
-                type="video/mp4"
-              />
-              Your browser does not support the video tag.
-            </video>
-          </div>
+          <div className="relative aspect-video rounded-xl overflow-hidden shadow-2xl bg-gray-900/5 dark:bg-gray-800/20 backdrop-blur-sm border border-white/10 dark:border-black/10"></div>
         </div>
       </div>
     </div>
