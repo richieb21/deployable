@@ -9,7 +9,7 @@ import {
 export async function POST(request: NextRequest) {
   try {
     const body: IdentifyKeyFilesRequest = await request.json();
-    const BASE_URL = process.env.NEXT_BACKEND_URL_DEV;
+    const BASE_URL = process.env.BACKEND_API_URL;
     const ENDPOINT = "/analysis/key-files";
 
     if (!BASE_URL) {

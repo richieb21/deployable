@@ -6,7 +6,7 @@ import { AnalysisRequest, AnalysisResponse } from "../../types/api";
 export async function POST(request: NextRequest) {
   try {
     const body: AnalysisRequest = await request.json();
-    const BASE_URL = process.env.NEXT_BACKEND_URL_DEV;
+    const BASE_URL = process.env.BACKEND_API_URL;
     const ENDPOINT = "/analysis";
 
     if (!BASE_URL) {

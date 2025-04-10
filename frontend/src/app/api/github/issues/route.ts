@@ -41,7 +41,7 @@ interface IssueResponse {
 export async function POST(request: NextRequest) {
   try {
     const body: CreateIssueRequest = await request.json();
-    const BASE_URL = process.env.NEXT_BACKEND_URL_DEV;
+    const BASE_URL = process.env.BACKEND_API_URL;
     const ENDPOINT = "/github/issues";
 
     if (!BASE_URL) {

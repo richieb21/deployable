@@ -43,8 +43,9 @@ class Settings(BaseSettings):
             if self.FRONTEND_PROD_URL:
                 self.CORS_ORIGINS = [self.FRONTEND_PROD_URL]
             else:
-                print("Warning: FRONTEND_PROD_URL not set")
-                self.CORS_ORIGINS = []
+                raise ValueError(
+                    f"Frontend Prod URL not set"
+                )
         
         if self.ENV != "development":
             missing_keys = []
