@@ -51,9 +51,6 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  env: {
-    BACKEND_URL_DEV: "http://localhost:8000",
-  },
   headers: async () => {
     return [
       {

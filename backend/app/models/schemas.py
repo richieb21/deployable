@@ -19,20 +19,32 @@ class RecommendationCategory(str, Enum):
     COMPLIANCE = "COMPLIANCE"
     COST = "COST"
 
+
 class AnalysisEventType(str, Enum):
     PROGRESS = "PROGRESS"
     COMPLETE = "COMPLETE"
     HEARTBEAT = "HEARTBEAT"
 
+
 class TechStack(BaseModel):
-    frontend: List[str] = Field(default_factory=list, description="Frontend technologies")
+    frontend: List[str] = Field(
+        default_factory=list, description="Frontend technologies"
+    )
     backend: List[str] = Field(default_factory=list, description="Backend technologies")
     infra: List[str] = Field(default_factory=list, description="Project Infrastructure")
 
+
 class KeyFiles(BaseModel):
-    frontend: List[str] = Field(default_factory=list, description="Frontend configuration and source files")
-    backend: List[str] = Field(default_factory=list, description="Backend configuration and source files")
-    infra: List[str] = Field(default_factory=list, description="Infrastructure and deployment files")
+    frontend: List[str] = Field(
+        default_factory=list, description="Frontend configuration and source files"
+    )
+    backend: List[str] = Field(
+        default_factory=list, description="Backend configuration and source files"
+    )
+    infra: List[str] = Field(
+        default_factory=list, description="Infrastructure and deployment files"
+    )
+
 
 class Recommendation(BaseModel):
     title: str
@@ -42,7 +54,9 @@ class Recommendation(BaseModel):
     category: RecommendationCategory
     action_items: List[str]
 
+
 """Streaming Specific Types"""
+
 
 class AnalysisProgressEvent(BaseModel):
     type: AnalysisEventType = AnalysisEventType.PROGRESS
@@ -50,22 +64,26 @@ class AnalysisProgressEvent(BaseModel):
     files: List[str]
     recommendations_count: int
 
+
 class AnalysisCompleteEvent(BaseModel):
     type: AnalysisEventType = AnalysisEventType.COMPLETE
     recommendations: List[Recommendation]
     analysis_timestamp: str
 
+
 class AnalysisHeartbeatEvent(BaseModel):
     type: AnalysisEventType = AnalysisEventType.HEARTBEAT
+
 
 class AnalysisRequest(BaseModel):
     repo_url: HttpUrl = Field(..., description="GitHub repository URL to analyze")
     important_files: KeyFiles = Field(
-        default_factory=KeyFiles,
-        description="Key Files for Analysis"
+        default_factory=KeyFiles, description="Key Files for Analysis"
     )
     is_reprompt: Optional[bool] = False
-    analysis_id: Optional[str] = None  # if not provided, we will not stream events, backwords compatible
+    analysis_id: Optional[str] = (
+        None  # if not provided, we will not stream events, backwords compatible
+    )
 
 
 class AnalysisResponse(BaseModel):
@@ -73,25 +91,27 @@ class AnalysisResponse(BaseModel):
     recommendations: List[Recommendation]
     # summary: str
     # detected_technologies: Dict[str, List[str]]
-    analysis_timestamp: str 
+    analysis_timestamp: str
+
 
 class IdentifyKeyFilesRequest(BaseModel):
     repo_url: str
     is_reprompt: Optional[bool] = False
 
+
 class IdentifyKeyFilesResponse(BaseModel):
     all_files: List[str]
     key_files: KeyFiles = Field(
-        default_factory=KeyFiles,
-        description="Categorized key files for analysis"
+        default_factory=KeyFiles, description="Categorized key files for analysis"
     )
     tech_stack: TechStack = Field(
-        default_factory=TechStack,
-        description="Technology stack detected"
+        default_factory=TechStack, description="Technology stack detected"
     )
+
 
 class AnalysisStreamStartRequest(BaseModel):
     repo_url: str
+
 
 class AnalysisStreamStartResponse(BaseModel):
     analysis_id: str
