@@ -1,43 +1,52 @@
 from typing import List
 import os
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "deployable"
+    ENV: str = os.environ.get("ENV", "development")
+
+    FRONTEND_PROD_URL: str = os.environ.get("FRONTEND_PROD_URL", "")
 
     # CORS settings
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "https://frontend-url.com"]
+    CORS_ORIGINS: List[str] = []
 
     # API Keys
-    GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "")
-    GITHUB_PAT: str = os.getenv("GITHUB_PAT", "")
-    GITHUB_PERSONAL_ACCESS_TOKEN: str = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN", "")
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    DEEPSEEK_API_KEY: str = os.getenv("DEEPSEEK_API_KEY", "")
-    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
-    CLAUDE_API_KEY: str = os.getenv("CLAUDE_API_KEY", "")
-    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
-
-    # Environment
-    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    GITHUB_TOKEN: str = os.environ.get("GITHUB_TOKEN", "")
+    GITHUB_PAT: str = os.environ.get("GITHUB_PAT", "")
+    GITHUB_PERSONAL_ACCESS_TOKEN: str = os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN", "")
+    OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY", "")
+    DEEPSEEK_API_KEY: str = os.environ.get("DEEPSEEK_API_KEY", "")
+    GROQ_API_KEY: str = os.environ.get("GROQ_API_KEY", "")
+    CLAUDE_API_KEY: str = os.environ.get("CLAUDE_API_KEY", "")
+    OPENROUTER_API_KEY: str = os.environ.get("OPENROUTER_API_KEY", "")
 
     # Rate limiting
-    ANALYSIS_RATE_LIMIT: str = os.getenv("ANALYSIS_RATE_LIMIT", "60/minute;2500/hour")
-    KEY_FILES_RATE_LIMIT: str = os.getenv("KEY_FILES_RATE_LIMIT", "60/minute;2500/hour")
+    ANALYSIS_RATE_LIMIT: str = os.environ.get("ANALYSIS_RATE_LIMIT", "60/minute;2500/hour")
+    KEY_FILES_RATE_LIMIT: str = os.environ.get("KEY_FILES_RATE_LIMIT", "60/minute;2500/hour")
 
     # Redis config
-    USE_REDIS: bool = os.getenv("USE_REDIS", "false").lower() == "true"
-    REDIS_HOST: str = os.getenv("REDIS_HOST", "localhost")
-    REDIS_PORT: int = int(os.getenv("REDIS_PORT", "6379"))
-    REDIS_PASSWORD: str = os.getenv("REDIS_PASSWORD", "")
-    REDIS_DB: str = os.getenv("REDIS_DB", "0")
+    USE_REDIS: bool = os.environ.get("USE_REDIS", "false").lower() == "true"
+    REDIS_HOST: str = os.environ.get("REDIS_HOST", "localhost")
+    REDIS_PORT: int = int(os.environ.get("REDIS_PORT", "6379"))
+    REDIS_PASSWORD: str = os.environ.get("REDIS_PASSWORD", "")
+    REDIS_DB: str = os.environ.get("REDIS_DB", "0")
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-        extra = "allow"  # This allows extra fields in the .env file
+    @model_validator(mode="after")
+    def set_cors_origins(self):
+        if self.ENV == "development":
+            self.CORS_ORIGINS = ["http://localhost:8000", "http://127.0.0.1:3000"]
+        else:
+            if self.FRONTEND_PROD_URL:
+                self.CORS_ORIGINS = [self.FRONTEND_PROD_URL]
+            else:
+                print("Warning: FRONTEND_PROD_URL not set")
+                self.CORS_ORIGINS = []
+        
+        return self
 
 
 settings = Settings()

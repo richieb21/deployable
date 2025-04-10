@@ -2,7 +2,6 @@ import os
 from openai import OpenAI
 import anthropic
 from typing import List, Dict, Optional, Literal
-from dotenv import load_dotenv
 from logging import getLogger
 import re
 from abc import ABC, abstractmethod
@@ -11,9 +10,6 @@ from app.core.dependencies import TTL_EXPIRATION
 from app.core.config import settings
 
 logger = getLogger(__name__)
-
-load_dotenv()
-
 
 class BaseLanguageModel(ABC):
     """Base class for language model services"""
@@ -203,7 +199,7 @@ class OpenAIService(BaseLanguageModel):
     """OpenAI-specific implementation"""
 
     def _initialize_client(self):
-        self.api_key = self.api_key or os.getenv("OPENAI_API_KEY")
+        self.api_key = self.api_key or settings.OPENAI_API_KEY
         if not self.api_key:
             logger.error("No OpenAI API key provided")
             raise ValueError("OPENAI_API_KEY environment variable not set")
@@ -235,7 +231,7 @@ class GroqService(BaseLanguageModel):
     """Groq Implementation"""
 
     def _initialize_client(self):
-        self.api_key = self.api_key or os.getenv("GROQ_API_KEY")
+        self.api_key = self.api_key or settings.GROQ_API_KEY
         if not self.api_key:
             logger.error("No Groq API key provided")
             raise ValueError("GROQ_API_KEY environment variable not set")
@@ -272,7 +268,7 @@ class ClaudeService(BaseLanguageModel):
     """Claude Sonnet Implementation"""
 
     def _initialize_client(self):
-        self.api_key = self.api_key or os.getenv("CLAUDE_API_KEY")
+        self.api_key = self.api_key or settings.CLAUDE_API_KEY
         if not self.api_key:
             logger.error("No Claude API key provided")
             raise ValueError("CLAUDE_API_KEY environment variable not set")
@@ -299,7 +295,7 @@ class QuasarService(BaseLanguageModel):
     """OpenRouter Quasar Implementation"""
 
     def _initialize_client(self):
-        self.api_key = self.api_key or os.getenv("OPENROUTER_API_KEY")
+        self.api_key = self.api_key or settings.OPENROUTER_API_KEY
         if not self.api_key:
             logger.error("No OpenRouter API key provided")
             raise ValueError("OPENROUTER_API_KEY environment variable not set")

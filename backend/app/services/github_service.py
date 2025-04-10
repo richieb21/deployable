@@ -4,24 +4,18 @@ from urllib.parse import urlparse
 from typing import Optional, Dict, Any, List, Tuple
 import redis.exceptions
 import requests
-import os
-import urllib3
 import base64
 from functools import lru_cache
 from app.core.dependencies import TTL_EXPIRATION
 import redis
-
-urllib3.disable_warnings(urllib3.exceptions.NotOpenSSLWarning)
+from app.core.config import settings
 
 logger = getLogger(__name__)
-
-load_dotenv()
-
 
 class GithubService:
     def __init__(self, pat: Optional[str] = None, redis_client=None):
         # use environment personal access token, fallback will be unauthenticated requests
-        self.github_token = pat or os.getenv("GITHUB_PAT")
+        self.github_token = pat or settings.GITHUB_PAT
         self.base_url = "https://api.github.com"
         self.redis_client = redis_client
 
