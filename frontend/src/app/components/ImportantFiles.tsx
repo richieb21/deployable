@@ -118,41 +118,41 @@ export const ImportantFiles = ({
   );
 };
 
-interface KeyFileCategoryProps {
-  category: string;
-  title: string;
-  files: string[];
-  highlightedFiles: Set<string>;
-}
+// interface KeyFileCategoryProps {
+//   category: string;
+//   title: string;
+//   files: string[];
+//   highlightedFiles: Set<string>;
+// }
 
-const KeyFileCategory = ({
-  category,
-  title,
-  files,
-  highlightedFiles,
-}: KeyFileCategoryProps) => {
-  return (
-    <div>
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-        {title}
-      </h3>
-      <ul className="space-y-2">
-        {files.map((file) => {
-          const isHighlighted = highlightedFiles.has(file);
-          return (
-            <li
-              key={file}
-              className={`text-sm text-gray-600 dark:text-gray-400 px-2 py-1 rounded transition-colors ${
-                isHighlighted
-                  ? "bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400"
-                  : ""
-              }`}
-            >
-              {file}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-};
+// const KeyFileCategory = ({
+//   category,
+//   title,
+//   files,
+//   highlightedFiles,
+// }: KeyFileCategoryProps) => {
+//   return (
+//     <div>
+//       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+//         {title}
+//       </h3>
+//       <ul className="space-y-2">
+//         {files.map((file) => {
+//           const isHighlighted = highlightedFiles.has(file);
+//           return (
+//             <li
+//               key={file}
+//               className={`text-sm text-gray-600 dark:text-gray-400 px-2 py-1 rounded transition-colors ${
+//                 isHighlighted
+//                   ? "bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400"
+//                   : ""
+//               }`}
+//             >
+//               {file}
+//             </li>
+//           );
+//         })}
+//       </ul>
+//     </div>
+//   );
+// };

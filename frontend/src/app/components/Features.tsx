@@ -32,36 +32,51 @@ export const Features = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:8000/ws/stats");
+    let isActive = true;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
 
-    ws.onopen = () => {
-      console.log("Connected to WebSocket");
+    const connectWebSocket = () => {
+      const ws = new WebSocket("ws://localhost:8000/ws/stats");
+
+      ws.onopen = () => {
+        console.log("Connected to WebSocket");
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log("Received:", data);
+          setStats(data);
+        } catch (error) {
+          console.error(
+            "Error parsing WebSocket message:",
+            error,
+            "Raw data:",
+            event.data
+          );
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+      };
+
+      ws.onclose = (event) => {
+        console.log("WebSocket closed:", event);
+        // Only attempt to reconnect if component is still mounted
+        if (isActive) {
+          reconnectTimeout = setTimeout(connectWebSocket, 1000);
+        }
+      };
+
+      return ws;
     };
 
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        console.log("Received:", data);
-        setStats(data);
-      } catch (error) {
-        console.error(
-          "Error parsing WebSocket message:",
-          error,
-          "Raw data:",
-          event.data
-        );
-      }
-    };
-
-    ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
-
-    ws.onclose = (event) => {
-      console.log("WebSocket closed:", event);
-    };
+    const ws = connectWebSocket();
 
     return () => {
+      isActive = false;
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
       console.log("Closing WebSocket connection");
       ws.close();
     };

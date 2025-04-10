@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ImportantFiles } from "@/app/components/ImportantFiles";
 import { FileTree } from "../../components/FileTree";
 import { IdentifyKeyFilesResponse } from "@/app/types/api";
@@ -10,7 +10,12 @@ interface AnalysisEvent {
   chunk_index?: number;
   files?: string[];
   recommendations_count?: number;
-  recommendations?: any[];
+  recommendations?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    priority?: number;
+  }>;
   analysis_timestamp?: string;
 }
 
@@ -31,7 +36,7 @@ export default function FileTreeTestPage() {
   const [highlightedFiles, setHighlightedFiles] = useState<Set<string>>(
     new Set()
   );
-  const [analysisId, setAnalysisId] = useState<string | null>(null);
+  // const [analysisId, setAnalysisId] = useState<string | null>(null);
 
   const startAnalysis = async () => {
     try {
@@ -53,7 +58,7 @@ export default function FileTreeTestPage() {
       }
 
       const { analysis_id } = await startResponse.json();
-      setAnalysisId(analysis_id);
+      // setAnalysisId(analysis_id);
 
       // 2. Connect to the event stream
       const eventSource = new EventSource(

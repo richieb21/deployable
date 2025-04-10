@@ -1,4 +1,4 @@
-// "use client";
+"use client";
 
 // import { useEffect, useState } from "react";
 
@@ -11,7 +11,7 @@
 //   analysis_timestamp?: string;
 // }
 
-// export default function TestAnalysis() {
+export default function TestAnalysis() {
 //   const [events, setEvents] = useState<AnalysisEvent[]>([]);
 //   const [error, setError] = useState<string | null>(null);
 
@@ -126,4 +126,4 @@
 //       </div>
 //     </div>
 //   );
-// }
+}
