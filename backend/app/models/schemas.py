@@ -22,6 +22,7 @@ class RecommendationCategory(str, Enum):
 
 class AnalysisEventType(str, Enum):
     PROGRESS = "PROGRESS"
+    RECOMMENDATION = "RECOMMENDATION"
     COMPLETE = "COMPLETE"
     HEARTBEAT = "HEARTBEAT"
 
@@ -64,6 +65,10 @@ class AnalysisProgressEvent(BaseModel):
     files: List[str]
     recommendations_count: int
 
+class AnalysisRecommendationEvent(BaseModel):
+    type: AnalysisEventType = AnalysisEventType.RECOMMENDATION
+    recommendation: Recommendation
+    
 
 class AnalysisCompleteEvent(BaseModel):
     type: AnalysisEventType = AnalysisEventType.COMPLETE

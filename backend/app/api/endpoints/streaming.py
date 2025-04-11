@@ -49,6 +49,8 @@ async def event_generator(analysis_id: str):
 
                 if event_type == AnalysisEventType.PROGRESS:
                     yield f"data: {json.dumps(data)}\n\n"
+                elif event_type == AnalysisEventType.RECOMMENDATION:
+                    yield f"data: {json.dumps(data)}\n\n"
                 elif event_type == AnalysisEventType.COMPLETE:
                     yield f"data: {json.dumps(data)}\n\n"
                     break

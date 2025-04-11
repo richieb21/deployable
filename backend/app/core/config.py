@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_settings(self):
         if self.ENV == "development":
-            self.CORS_ORIGINS = ["http://localhost:8000", "http://127.0.0.1:3000"]
+            self.CORS_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"]
         else:
             if self.FRONTEND_PROD_URL:
                 self.CORS_ORIGINS = [self.FRONTEND_PROD_URL]

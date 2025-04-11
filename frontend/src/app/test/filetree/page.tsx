@@ -6,7 +6,7 @@ import { FileTree } from "../../components/FileTree";
 import { IdentifyKeyFilesResponse } from "@/app/types/api";
 
 interface AnalysisEvent {
-  type: "PROGRESS" | "COMPLETE" | "HEARTBEAT";
+  type: "PROGRESS" | "RECOMMENDATION" | "COMPLETE" | "HEARTBEAT";
   chunk_index?: number;
   files?: string[];
   recommendations_count?: number;
@@ -66,12 +66,14 @@ export default function FileTreeTestPage() {
         console.log("Received event:", data);
 
         if (data.type === "PROGRESS" && data.files) {
-          console.log("Highlighting files:", data.files);
           setHighlightedFiles((prev) => {
             const newSet = new Set([...prev, ...data.files!]);
-            console.log("Current highlighted files:", Array.from(newSet));
             return newSet;
           });
+        }
+
+        if (data.type === "RECOMMENDATION") {
+          console.log(data);
         }
 
         if (data.type === "COMPLETE") {

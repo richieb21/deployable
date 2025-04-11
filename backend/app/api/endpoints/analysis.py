@@ -110,6 +110,13 @@ async def process_batch(executor, chunk, client_pool, chunk_index, queue):
             "recommendations_count": len(chunk_recommendations),
         }
 
+        for chunk_recommendation in chunk_recommendations:
+            recommendation_event = {
+                "type": "RECOMMENDATION",
+                "recommendation" : chunk_recommendation
+            }
+            await queue.put(recommendation_event)
+
         await queue.put(progress_event)
 
         return chunk_index, chunk_recommendations
