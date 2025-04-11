@@ -17,7 +17,6 @@
 
 import { Recommendation } from "../types/api";
 import { useState, useEffect, useRef } from "react";
-import { AnimatePresence } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
 import IssueItem from "./IssueItem";
 import { AnimatedLogo } from "./AnimatedLogo";
@@ -415,31 +414,29 @@ ${issue.category}
 
   return (
     <div className="max-w-5xl mx-auto">
-      <AnimatePresence>
-        {sortedRecommendations.map((issue, index) => {
-          const issueId = `${issue.title}-${issue.file_path}`;
-          const isCompleted = completedIssues[issueId] || false;
-          const isCreated = !!createdIssues[issueId];
-          const isCreatingIssueItem = isCreatingIssue[issueId] || false;
+      {sortedRecommendations.map((issue, index) => {
+        const issueId = `${issue.title}-${issue.file_path}`;
+        const isCompleted = completedIssues[issueId] || false;
+        const isCreated = !!createdIssues[issueId];
+        const isCreatingIssueItem = isCreatingIssue[issueId] || false;
 
-          return (
-            <IssueItem
-              key={`${issueId}-${index}`}
-              issue={issue}
-              index={index}
-              issueId={issueId}
-              isCompleted={isCompleted}
-              isCreated={isCreated}
-              isCreatingIssue={isCreatingIssueItem}
-              expandedIssue={expandedIssue}
-              createdIssueInfo={createdIssues[issueId]}
-              handleToggleExpand={handleToggleExpand}
-              toggleIssueCompletion={toggleIssueCompletion}
-              createGitHubIssue={createGitHubIssue}
-            />
-          );
-        })}
-      </AnimatePresence>
+        return (
+          <IssueItem
+            key={`${issueId}-${index}`}
+            issue={issue}
+            index={index}
+            issueId={issueId}
+            isCompleted={isCompleted}
+            isCreated={isCreated}
+            isCreatingIssue={isCreatingIssueItem}
+            expandedIssue={expandedIssue}
+            createdIssueInfo={createdIssues[issueId]}
+            handleToggleExpand={handleToggleExpand}
+            toggleIssueCompletion={toggleIssueCompletion}
+            createGitHubIssue={createGitHubIssue}
+          />
+        );
+      })}
 
       {/* Error Modal */}
       <ErrorModal

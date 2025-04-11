@@ -1,7 +1,8 @@
 "use client";
 
+import React from "react";
 import { useState, useEffect, useRef } from "react";
-import { useTheme } from "../context/ThemeContext";
+import { useTheme } from "../../context/ThemeContext";
 import { motion, useSpring, useTransform } from "framer-motion";
 
 // Component to animate numbers

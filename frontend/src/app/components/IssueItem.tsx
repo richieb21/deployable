@@ -71,11 +71,7 @@ const IssueItem = ({
 
   return (
     <div className="mb-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.3 }}
+      <div
         className={`relative rounded-t-xl ${
           expandedIssue === index ? "" : "rounded-b-xl"
         } overflow-hidden`}
@@ -325,7 +321,7 @@ const IssueItem = ({
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Expanded issue content */}
       <AnimatePresence>

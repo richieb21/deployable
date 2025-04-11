@@ -1,9 +1,9 @@
 "use client";
 
+import React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTheme } from "../context/ThemeContext";
-
+import { useTheme } from "../../context/ThemeContext";
 /**
  * Hero Component
  *
