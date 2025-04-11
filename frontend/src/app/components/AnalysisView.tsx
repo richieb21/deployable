@@ -146,21 +146,29 @@ export const AnalysisView = ({
       {/* Container to limit width on all content */}
       <div className="w-full max-w-7xl px-3">
         {/* Header section with logo and progress indicator */}
-        <div className="mb-2 w-full">
+        <div className="mb-8 w-full">
           <div className="flex items-center">
             <div className="mr-3 shrink-0">
-              <AnimatedLogo size={60} theme={theme} />
+              <AnimatedLogo size={48} theme={theme} />
             </div>
             <div className="flex-1 flex flex-col">
-              <div className="text-gray-400 text-sm mb-1">
+              <div
+                className={`text-sm mb-2 ${
+                  theme === "dark" ? "text-gray-600" : "text-gray-400"
+                }`}
+              >
                 {statusText}
                 {dots}
               </div>
               <div
-                className={`w-full h-2 ${theme === "dark" ? "bg-gray-800" : "bg-gray-200"} rounded-full overflow-hidden`}
+                className={`w-full h-3 ${
+                  theme === "dark" ? "bg-gray-800" : "bg-gray-200"
+                } rounded-full overflow-hidden`}
               >
                 <div
-                  className="h-full bg-white rounded-full transition-all duration-300 ease-out"
+                  className={`h-full rounded-full transition-all duration-300 ease-out ${
+                    theme === "dark" ? "bg-white" : "bg-black"
+                  }`}
                   style={{ width: `${progress}%` }}
                 ></div>
               </div>
@@ -169,13 +177,21 @@ export const AnalysisView = ({
         </div>
 
         {files.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-3 w-full">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 w-full">
             {/* Repository Structure (3/12 = 25% on desktop, full width on mobile) */}
             <div
-              className={`md:col-span-3 bg-black dark:bg-gray-900 rounded-xl border border-gray-800 p-2 md:p-3 
-                ${theme === "dark" ? "text-white" : "text-white"}`}
+              className={`md:col-span-3 ${
+                theme === "dark" ? "bg-[#13151a]" : "bg-gray-50"
+              } rounded-xl shadow-sm p-3 md:p-4 
+                ${theme === "dark" ? "text-white" : "text-gray-900"}`}
             >
-              <h2 className="text-base font-semibold mb-1">Repo</h2>
+              <h2
+                className={`text-base font-semibold mb-2 ${
+                  theme === "dark" ? "text-white" : "text-gray-900"
+                }`}
+              >
+                Repo
+              </h2>
               <div className="max-h-[calc(100vh-180px)] overflow-y-auto pr-2">
                 <FileTree files={files} />
               </div>
@@ -183,10 +199,18 @@ export const AnalysisView = ({
 
             {/* Important Files (5/12 ≈ 42% on desktop, full width on mobile) */}
             <div
-              className={`md:col-span-5 bg-black dark:bg-gray-900 rounded-xl border border-gray-800 p-2 md:p-3 
-                ${theme === "dark" ? "text-white" : "text-white"}`}
+              className={`md:col-span-5 ${
+                theme === "dark" ? "bg-[#13151a]" : "bg-gray-50"
+              } rounded-xl shadow-sm p-3 md:p-4 
+                ${theme === "dark" ? "text-white" : "text-gray-900"}`}
             >
-              <h2 className="text-base font-semibold mb-1">Important Files</h2>
+              <h2
+                className={`text-lg font-bold mb-2 ${
+                  theme === "dark" ? "text-white" : "text-gray-900"
+                }`}
+              >
+                Important Files
+              </h2>
               <div className="max-h-[calc(100vh-180px)] overflow-y-auto pr-2">
                 <ImportantFiles
                   key_files={keyFiles}
@@ -197,22 +221,37 @@ export const AnalysisView = ({
 
             {/* Issues (4/12 ≈ 33% on desktop, full width on mobile) */}
             <div
-              className={`md:col-span-4 bg-black dark:bg-gray-900 rounded-xl border border-gray-800 p-2 md:p-3 
-                ${theme === "dark" ? "text-white" : "text-white"}`}
+              className={`md:col-span-4 ${
+                theme === "dark" ? "bg-[#13151a]" : "bg-gray-50"
+              } rounded-xl shadow-sm p-3 md:p-4 
+                ${theme === "dark" ? "text-white" : "text-gray-900"}`}
             >
-              <h2 className="text-base font-semibold mb-1">Issues</h2>
+              <h2
+                className={`text-base font-semibold mb-2 ${
+                  theme === "dark" ? "text-white" : "text-gray-900"
+                }`}
+              >
+                Issues
+              </h2>
               <div className="max-h-[calc(100vh-180px)] overflow-y-auto pr-2">
                 {issues && issues.length > 0 ? (
                   <ul className="space-y-2">
                     {issues.map((issue, index) => (
-                      <li key={index} className="border-b border-gray-800 pb-2">
-                        <div className="font-medium text-yellow-400">
+                      <li
+                        key={index}
+                        className="border-b border-gray-800/20 pb-2"
+                      >
+                        <div
+                          className={`font-medium ${theme === "dark" ? "text-yellow-400" : "text-yellow-600"}`}
+                        >
                           {issue.title}
                         </div>
                         <div className="text-xs text-gray-400">
                           {issue.file_path}
                         </div>
-                        <div className="text-xs mt-1 text-gray-300">
+                        <div
+                          className={`text-xs mt-1 ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}
+                        >
                           {issue.description.substring(0, 100)}...
                         </div>
                       </li>
