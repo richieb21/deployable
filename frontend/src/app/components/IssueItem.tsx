@@ -83,15 +83,39 @@ const IssueItem = ({
           backgroundColor: isCompleted
             ? "rgba(20, 83, 45, 0.05)"
             : theme === "dark"
-            ? "#1A1817"
-            : "white",
+              ? severityColor === "bg-red-500"
+                ? "rgba(239, 68, 68, 0.05)"
+                : severityColor === "bg-yellow-500"
+                  ? "rgba(234, 179, 8, 0.05)"
+                  : severityColor === "bg-blue-500"
+                    ? "rgba(59, 130, 246, 0.05)"
+                    : "#1A1817"
+              : severityColor === "bg-red-500"
+                ? "rgba(239, 68, 68, 0.02)"
+                : severityColor === "bg-yellow-500"
+                  ? "rgba(234, 179, 8, 0.02)"
+                  : severityColor === "bg-blue-500"
+                    ? "rgba(59, 130, 246, 0.02)"
+                    : "white",
           borderWidth: 1,
           borderStyle: "solid",
           borderColor: isCompleted
             ? "rgba(20, 83, 45, 0.2)"
             : theme === "dark"
-            ? "rgba(75, 85, 99, 0.3)"
-            : "#e5e7eb",
+              ? severityColor === "bg-red-500"
+                ? "rgba(239, 68, 68, 0.1)"
+                : severityColor === "bg-yellow-500"
+                  ? "rgba(234, 179, 8, 0.1)"
+                  : severityColor === "bg-blue-500"
+                    ? "rgba(59, 130, 246, 0.1)"
+                    : "rgba(75, 85, 99, 0.3)"
+              : severityColor === "bg-red-500"
+                ? "rgba(239, 68, 68, 0.05)"
+                : severityColor === "bg-yellow-500"
+                  ? "rgba(234, 179, 8, 0.05)"
+                  : severityColor === "bg-blue-500"
+                    ? "rgba(59, 130, 246, 0.05)"
+                    : "#e5e7eb",
         }}
       >
         {/* Severity color bar on left edge */}
@@ -169,23 +193,23 @@ const IssueItem = ({
                         ? "rgba(22, 163, 74, 0.3)"
                         : "rgba(22, 163, 74, 0.2)"
                       : isCreatingIssue
-                      ? theme === "dark"
-                        ? "#374151"
-                        : "#d1d5db"
-                      : theme === "dark"
-                      ? "#2A2D31"
-                      : "#e5e7eb",
+                        ? theme === "dark"
+                          ? "#374151"
+                          : "#d1d5db"
+                        : theme === "dark"
+                          ? "#2A2D31"
+                          : "#e5e7eb",
                     color: isCreated
                       ? theme === "dark"
                         ? "#4ade80"
                         : "#15803d"
                       : isCreatingIssue
-                      ? theme === "dark"
-                        ? "#9ca3af"
-                        : "#4b5563"
-                      : theme === "dark"
-                      ? "#d1d5db"
-                      : "#374151",
+                        ? theme === "dark"
+                          ? "#9ca3af"
+                          : "#4b5563"
+                        : theme === "dark"
+                          ? "#d1d5db"
+                          : "#374151",
                   }}
                   className="flex items-center px-2 sm:px-4 py-1 sm:py-2 rounded-md transition-colors duration-200 hover:bg-opacity-90 text-xs sm:text-sm flex-1 sm:flex-auto justify-center sm:justify-start"
                 >
@@ -201,8 +225,8 @@ const IssueItem = ({
                           ? "#4ade80"
                           : "#15803d"
                         : theme === "dark"
-                        ? "#9ca3af"
-                        : "#4b5563"
+                          ? "#9ca3af"
+                          : "#4b5563"
                     }
                   >
                     {isCreated ? (
@@ -237,8 +261,8 @@ const IssueItem = ({
                     {isCreated
                       ? "Issue Created"
                       : isCreatingIssue
-                      ? "Creating..."
-                      : "Create Issue"}
+                        ? "Creating..."
+                        : "Create Issue"}
                   </span>
                 </button>
                 <button
@@ -250,15 +274,15 @@ const IssueItem = ({
                         ? "rgba(22, 163, 74, 0.3)"
                         : "rgba(22, 163, 74, 0.2)"
                       : theme === "dark"
-                      ? "#2A2D31"
-                      : "#e5e7eb",
+                        ? "#2A2D31"
+                        : "#e5e7eb",
                     color: isCompleted
                       ? theme === "dark"
                         ? "#4ade80"
                         : "#15803d"
                       : theme === "dark"
-                      ? "#d1d5db"
-                      : "#374151",
+                        ? "#d1d5db"
+                        : "#374151",
                   }}
                 >
                   <svg
@@ -272,8 +296,8 @@ const IssueItem = ({
                           ? "#4ade80"
                           : "#15803d"
                         : theme === "dark"
-                        ? "#9ca3af"
-                        : "#4b5563"
+                          ? "#9ca3af"
+                          : "#4b5563"
                     }
                     viewBox="0 0 24 24"
                   >
@@ -316,14 +340,38 @@ const IssueItem = ({
               backgroundColor: isCompleted
                 ? "rgba(20, 83, 45, 0.05)"
                 : theme === "dark"
-                ? "#1A1817"
-                : "white",
+                  ? severityColor === "bg-red-500"
+                    ? "rgba(239, 68, 68, 0.05)"
+                    : severityColor === "bg-yellow-500"
+                      ? "rgba(234, 179, 8, 0.05)"
+                      : severityColor === "bg-blue-500"
+                        ? "rgba(59, 130, 246, 0.05)"
+                        : "#1A1817"
+                  : severityColor === "bg-red-500"
+                    ? "rgba(239, 68, 68, 0.02)"
+                    : severityColor === "bg-yellow-500"
+                      ? "rgba(234, 179, 8, 0.02)"
+                      : severityColor === "bg-blue-500"
+                        ? "rgba(59, 130, 246, 0.02)"
+                        : "white",
               borderTop: "1px solid",
               borderTopColor: isCompleted
                 ? "rgba(20, 83, 45, 0.1)"
                 : theme === "dark"
-                ? "rgba(75, 85, 99, 0.3)"
-                : "#e5e7eb",
+                  ? severityColor === "bg-red-500"
+                    ? "rgba(239, 68, 68, 0.1)"
+                    : severityColor === "bg-yellow-500"
+                      ? "rgba(234, 179, 8, 0.1)"
+                      : severityColor === "bg-blue-500"
+                        ? "rgba(59, 130, 246, 0.1)"
+                        : "rgba(75, 85, 99, 0.3)"
+                  : severityColor === "bg-red-500"
+                    ? "rgba(239, 68, 68, 0.05)"
+                    : severityColor === "bg-yellow-500"
+                      ? "rgba(234, 179, 8, 0.05)"
+                      : severityColor === "bg-blue-500"
+                        ? "rgba(59, 130, 246, 0.05)"
+                        : "#e5e7eb",
             }}
           >
             <IssueDetails
