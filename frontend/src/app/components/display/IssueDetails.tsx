@@ -1,13 +1,13 @@
 /**
  * IssueDetails Component
- * 
+ *
  * Renders the expanded details of a code quality issue, including:
  * - Issue description
  * - Action items
  * - Code snippets (before/after)
  * - References and documentation links
  * - GitHub issue link (if created)
- * 
+ *
  * This component is purely presentational and receives all necessary data
  * and state via props from the parent IssueItem component.
  */
@@ -41,8 +41,8 @@ const IssueDetails = ({
           borderLeftColor: isCompleted
             ? "rgba(20, 83, 45, 0.3)"
             : theme === "dark"
-            ? "#4b5563"
-            : "#9ca3af",
+              ? "#4b5563"
+              : "#9ca3af",
           opacity: isCompleted ? 0.8 : 1,
         }}
       >
@@ -51,13 +51,13 @@ const IssueDetails = ({
           <div
             className={`mb-4 p-3 ${
               theme === "dark"
-                ? "bg-green-900/20 border border-green-800/30"
+                ? "bg-green-900/30 border border-green-800/40"
                 : "bg-green-100 border border-green-200"
             } rounded-md`}
           >
             <p
               className={`${
-                theme === "dark" ? "text-green-400" : "text-green-700"
+                theme === "dark" ? "text-green-300" : "text-green-700"
               } flex items-center text-sm`}
             >
               <svg
@@ -79,7 +79,9 @@ const IssueDetails = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`ml-2 underline ${
-                  theme === "dark" ? "hover:text-green-300" : "hover:text-green-800"
+                  theme === "dark"
+                    ? "hover:text-green-300"
+                    : "hover:text-green-800"
                 }`}
               >
                 #{createdIssueInfo.number}
@@ -211,4 +213,4 @@ const IssueDetails = ({
   );
 };
 
-export default IssueDetails; 
+export default IssueDetails;
