@@ -103,7 +103,7 @@ export const ImportantFiles = ({
         <div className="relative overflow-hidden rounded">
           {highlightedFiles.has(file) && (
             <motion.div
-              className="absolute inset-0 bg-green-800/20 dark:bg-green-500/30"
+              className="absolute inset-0 bg-green-900/50 dark:bg-green-800/80"
               initial={{ width: 0 }}
               animate={{ width: "100%" }}
               transition={{
@@ -122,8 +122,8 @@ export const ImportantFiles = ({
           <span
             className={`relative z-10 inline-block text-sm px-2 py-1 rounded transition-colors ${
               highlightedFiles.has(file)
-                ? "text-green-800 dark:text-green-400"
-                : "text-gray-950 dark:text-gray-300"
+                ? "text-green-200 dark:text-green-300"
+                : "text-gray-950 dark:text-gray-400"
             }`}
           >
             {file}
@@ -144,7 +144,7 @@ export const ImportantFiles = ({
             : "translate-x-[20px] opacity-0"
         }`}
       >
-        <h2 className="text-base text-gray-500 dark:text-gray-500 mb-2">
+        <h2 className="text-base text-gray-700 dark:text-gray-500 mb-2">
           {title.charAt(0).toUpperCase() + title.slice(1)}
         </h2>
         <div className="pl-4 border-l border-gray-200 dark:border-gray-800 space-y-2">

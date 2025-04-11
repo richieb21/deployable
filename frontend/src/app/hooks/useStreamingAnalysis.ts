@@ -129,14 +129,14 @@ export function useStreamingAnalysis(repoUrl: string) {
             const newIssues = data.recommendations as Recommendation[];
             setState((prev) => ({
               ...prev,
-              analysisIssues: [...prev.analysisIssues, ...newIssues],
+              analysisIssues: [...newIssues, ...prev.analysisIssues],
             }));
           } else if (data.recommendation) {
             // Handle single recommendation - ensuring it's not undefined
             const recommendation = data.recommendation;
             setState((prev) => ({
               ...prev,
-              analysisIssues: [...prev.analysisIssues, recommendation],
+              analysisIssues: [recommendation, ...prev.analysisIssues],
             }));
           }
         }

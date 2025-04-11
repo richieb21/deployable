@@ -4,6 +4,7 @@ import { AnimatedLogo } from "./AnimatedLogo";
 import { FileTree } from "./FileTree";
 import { ImportantFiles } from "./ImportantFiles";
 import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Import the Recommendation type
 import { Recommendation } from "../types/api";
@@ -145,8 +146,10 @@ export const AnalysisView = ({
   // Auto-scroll issues container when new issues arrive
   useEffect(() => {
     if (issuesContainerRef.current && issues.length > 0) {
-      issuesContainerRef.current.scrollTop =
-        issuesContainerRef.current.scrollHeight;
+      issuesContainerRef.current.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
     }
   }, [issues.length]);
 
@@ -154,15 +157,15 @@ export const AnalysisView = ({
   const getSeverityColor = (severity: string) => {
     switch (severity?.toLowerCase()) {
       case "critical":
-        return theme === "dark" ? "text-red-400" : "text-red-600";
+        return theme === "dark" ? "text-red-400" : "text-red-100";
       case "high":
-        return theme === "dark" ? "text-orange-400" : "text-orange-600";
+        return theme === "dark" ? "text-orange-400" : "text-orange-100";
       case "medium":
-        return theme === "dark" ? "text-yellow-400" : "text-yellow-600";
+        return theme === "dark" ? "text-yellow-400" : "text-yellow-100";
       case "low":
-        return theme === "dark" ? "text-blue-400" : "text-blue-600";
+        return theme === "dark" ? "text-blue-400" : "text-blue-100";
       default:
-        return theme === "dark" ? "text-gray-400" : "text-gray-600";
+        return theme === "dark" ? "text-gray-400" : "text-gray-100";
     }
   };
 
@@ -170,15 +173,15 @@ export const AnalysisView = ({
   const getSeverityBgColor = (severity: string) => {
     switch (severity?.toLowerCase()) {
       case "critical":
-        return theme === "dark" ? "bg-red-950/30" : "bg-red-50";
+        return theme === "dark" ? "bg-red-950/30" : "bg-red-600";
       case "high":
-        return theme === "dark" ? "bg-orange-950/30" : "bg-orange-50";
+        return theme === "dark" ? "bg-orange-950/30" : "bg-orange-600";
       case "medium":
-        return theme === "dark" ? "bg-yellow-950/30" : "bg-yellow-50";
+        return theme === "dark" ? "bg-yellow-950/30" : "bg-yellow-600";
       case "low":
-        return theme === "dark" ? "bg-blue-950/30" : "bg-blue-50";
+        return theme === "dark" ? "bg-blue-950/30" : "bg-blue-600";
       default:
-        return theme === "dark" ? "bg-gray-800/30" : "bg-gray-100";
+        return theme === "dark" ? "bg-gray-800/30" : "bg-gray-600";
     }
   };
 
@@ -223,7 +226,9 @@ export const AnalysisView = ({
             <div
               className={`md:col-span-3 ${
                 theme === "dark" ? "bg-[#13151a]" : "bg-gray-50"
-              } rounded-xl shadow-sm p-3 md:p-4 
+              } rounded-xl shadow-sm p-3 md:p-4 border ${
+                theme === "dark" ? "border-gray-800" : "border-gray-200"
+              }
                 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
             >
               <h2
@@ -242,7 +247,9 @@ export const AnalysisView = ({
             <div
               className={`md:col-span-5 ${
                 theme === "dark" ? "bg-[#13151a]" : "bg-gray-50"
-              } rounded-xl shadow-sm p-3 md:p-4 
+              } rounded-xl shadow-sm p-3 md:p-4 border ${
+                theme === "dark" ? "border-gray-800" : "border-gray-200"
+              }
                 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
             >
               <h2
@@ -264,7 +271,9 @@ export const AnalysisView = ({
             <div
               className={`md:col-span-4 ${
                 theme === "dark" ? "bg-[#13151a]" : "bg-gray-50"
-              } rounded-xl shadow-sm p-3 md:p-4 
+              } rounded-xl shadow-sm p-3 md:p-4 border ${
+                theme === "dark" ? "border-gray-800" : "border-gray-200"
+              }
                 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
             >
               <h2
@@ -276,34 +285,42 @@ export const AnalysisView = ({
               </h2>
               <div
                 ref={issuesContainerRef}
-                className="max-h-[calc(100vh-180px)] overflow-y-auto pr-2"
+                className="max-h-[calc(100vh-180px)] overflow-y-auto pr-2 scroll-smooth"
               >
                 {issues && issues.length > 0 ? (
                   <ul className="space-y-2">
-                    {issues.map((issue, index) => (
-                      <li
-                        key={issue.title + index}
-                        className={`${getSeverityBgColor(issue.severity)} rounded-lg p-3 mb-2`}
-                      >
-                        <div
-                          className={`font-medium ${getSeverityColor(issue.severity)}`}
+                    <AnimatePresence initial={false}>
+                      {issues.map((issue, index) => (
+                        <motion.li
+                          key={issue.title + index}
+                          initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                          animate={{
+                            opacity: 1,
+                            height: "auto",
+                            marginBottom: 8,
+                          }}
+                          exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                          className={`${getSeverityBgColor(issue.severity)} rounded-lg p-3`}
                         >
-                          {issue.title}
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {issue.file_path}
-                        </div>
-                        <div
-                          className={`text-xs mt-1 ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}
-                        >
-                          {issue.description.substring(0, 100)}
-                          {issue.description.length > 100 && "..."}
-                        </div>
-                      </li>
-                    ))}
+                          <div
+                            className={`font-medium ${getSeverityColor(issue.severity)} text-sm`}
+                          >
+                            {issue.title}
+                          </div>
+                          <div
+                            className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-200"}`}
+                          >
+                            {issue.file_path}
+                          </div>
+                        </motion.li>
+                      ))}
+                    </AnimatePresence>
                   </ul>
                 ) : (
-                  <div className="text-gray-400 text-sm">
+                  <div
+                    className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}
+                  >
                     Issues will appear as analysis progresses...
                   </div>
                 )}

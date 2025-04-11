@@ -156,7 +156,7 @@ export const FileTree = ({ files, className = "" }: FileTreeProps) => {
           onClick={() => type === "directory" && toggleFolder(path)}
         >
           {renderFileIcon(type, path, name)}
-          <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-colors">
+          <span className="text-sm text-gray-700 dark:text-gray-400 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-colors">
             {name}
           </span>
         </div>

@@ -34,7 +34,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-CURRENT_LLM_PROIVDER = "groq"
+CURRENT_LLM_PROIVDER = "deepseek"
 recommendations_lock = threading.Lock()
 
 
