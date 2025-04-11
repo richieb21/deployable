@@ -2,25 +2,15 @@
 
 import { StatsDisplay } from "../components/StatsDisplay";
 import { IssuesList } from "../components/IssuesList";
-import { ImportantFiles } from "../components/ImportantFiles";
-import { FileTree } from "../components/FileTree";
-import { AnimatedLogo } from "../components/AnimatedLogo";
+import { AnalysisView } from "../components/AnalysisView";
 import { useSearchParams } from "next/navigation";
 import { StatsLayout } from "../components/StatsLayout";
 import { useAnalysis } from "../hooks/useAnalysis";
-import { useState, useEffect, useRef } from "react";
+import { useStreamingAnalysis } from "../hooks/useStreamingAnalysis";
+import { useIssueCompletion } from "../hooks/useIssueCompletion";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
-import { IdentifyKeyFilesResponse, Recommendation } from "../types/api";
-
-interface AnalysisEvent {
-  type: "PROGRESS" | "COMPLETE" | "HEARTBEAT";
-  chunk_index?: number;
-  files?: string[];
-  recommendations_count?: number;
-  recommendations?: Recommendation[];
-  analysis_timestamp?: string;
-}
 
 export default function StatsPage() {
   const { theme } = useTheme();
@@ -34,58 +24,36 @@ export default function StatsPage() {
   const repoOwner = repoUrlParts[0] || "";
   const repoName = repoUrlParts[1] || "";
 
-  const [completedIssues, setCompletedIssues] = useState<{
-    [key: string]: boolean;
-  }>({});
-  const prevCompletedCountRef = useRef(0);
-  const changedIssueIdRef = useRef<string | null>(null);
+  // Use our custom hooks
+  const {
+    completedIssues,
+    changedIssueId,
+    handleIssueStatusChange,
+    handleCompleteAll,
+  } = useIssueCompletion();
+  const { data, loading, error, refreshAnalysis } = useAnalysis(repoUrl);
+  const {
+    files,
+    keyFiles,
+    highlightedFiles,
+    isAnalyzing,
+    analysisIssues,
+    startAnalysis,
+  } = useStreamingAnalysis(repoUrl);
+
   const [showProgressBar, setShowProgressBar] = useState(false);
   const [overallScore, setOverallScore] = useState(0);
   const [selectedIssues, setSelectedIssues] = useState<Set<string>>(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
 
-  // New state for file tree and analysis streaming
-  const [files, setFiles] = useState<string[]>([]);
-  const [keyFiles, setKeyFiles] = useState<{
-    frontend: string[];
-    backend: string[];
-    infra: string[];
-  }>({
-    frontend: [],
-    backend: [],
-    infra: [],
-  });
-  const [highlightedFiles, setHighlightedFiles] = useState<Set<string>>(
-    new Set()
-  );
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-
-  // Fetch analysis data with caching
-  const { data, loading, error, refreshAnalysis } = useAnalysis(repoUrl);
-
-  // Load completed issues from localStorage on mount
+  // Automatically start analysis when the page loads for the first time
   useEffect(() => {
-    try {
-      const storedCompletedIssues = localStorage.getItem("completedIssues");
-      if (storedCompletedIssues) {
-        const parsed = JSON.parse(storedCompletedIssues);
-        setCompletedIssues(parsed);
-        prevCompletedCountRef.current = Object.keys(parsed).length;
-      }
-    } catch (error) {
-      console.error("Error loading completed issues:", error);
+    if (!initialLoadDone && !data && !isAnalyzing) {
+      startAnalysis();
+      setInitialLoadDone(true);
     }
-  }, []);
-
-  // Handle issue status changes
-  const handleIssueStatusChange = (
-    updatedCompletedIssues: { [key: string]: boolean },
-    changedIssueId: string
-  ) => {
-    // Track which issue was changed
-    changedIssueIdRef.current = changedIssueId;
-    setCompletedIssues(updatedCompletedIssues);
-  };
+  }, [data, isAnalyzing, initialLoadDone, startAnalysis]);
 
   // Handle scroll to show/hide progress bar
   useEffect(() => {
@@ -122,152 +90,16 @@ export default function StatsPage() {
     }
   };
 
-  // Add a new function to handle completing all selected issues
-  const handleCompleteAll = () => {
+  // Handle completing all selected issues
+  const handleCompleteSelected = () => {
     if (selectedIssues.size === 0) return;
 
-    // Create a copy of the current completedIssues
-    const updatedCompletedIssues = { ...completedIssues };
-
-    // Mark all selected issues as completed
-    selectedIssues.forEach((issueId) => {
-      updatedCompletedIssues[issueId] = true;
-    });
-
-    // Update state
-    setCompletedIssues(updatedCompletedIssues);
-
-    // Save to localStorage
-    try {
-      localStorage.setItem(
-        "completedIssues",
-        JSON.stringify(updatedCompletedIssues)
-      );
-    } catch (error) {
-      console.error("Error saving completed issues:", error);
-    }
+    // Use the bulk complete handler from our hook
+    handleCompleteAll(selectedIssues);
 
     // Clear selection and hide bulk actions
     setSelectedIssues(new Set());
     setShowBulkActions(false);
-
-    // Set the last changed issue ID to trigger animations
-    changedIssueIdRef.current = "bulk-update";
-  };
-
-  // New function to handle starting analysis with streaming
-  const startAnalysis = async () => {
-    try {
-      setIsAnalyzing(true);
-      setHighlightedFiles(new Set());
-
-      // 1. Start the analysis stream
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const startResponse = await fetch(`${apiUrl}/stream/start`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!startResponse.ok) {
-        throw new Error("Failed to start analysis");
-      }
-
-      const { analysis_id } = await startResponse.json();
-
-      // 2. Connect to the event stream
-      const eventSource = new EventSource(
-        `${apiUrl}/stream/analysis/${analysis_id}`,
-        { withCredentials: false }
-      );
-
-      eventSource.onmessage = (event) => {
-        const data = JSON.parse(event.data) as AnalysisEvent;
-        console.log("Received event:", data);
-
-        if (data.type === "PROGRESS" && data.files) {
-          setHighlightedFiles((prev) => {
-            const newSet = new Set([...prev, ...data.files!]);
-            return newSet;
-          });
-        }
-
-        if (data.type === "COMPLETE") {
-          eventSource.close();
-          // Do NOT trigger refreshAnalysis here as it causes the UI to revert
-          // Instead, set a flag to check if analysis is complete
-          setIsAnalyzing(false);
-        }
-      };
-
-      eventSource.onerror = (error) => {
-        console.error("EventSource error:", error);
-        eventSource.close();
-        setIsAnalyzing(false);
-      };
-
-      // 3. Start the actual analysis
-      const analysisResponse = await fetch(`${apiUrl}/analysis`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          repo_url: repoUrl,
-          important_files: keyFiles,
-          analysis_id,
-        }),
-      });
-
-      if (!analysisResponse.ok) {
-        throw new Error("Analysis failed to start");
-      }
-    } catch (err) {
-      console.error("Error:", err);
-      setIsAnalyzing(false);
-    }
-  };
-
-  // Function to fetch repository files
-  const fetchRepositoryFiles = async () => {
-    try {
-      setIsAnalyzing(true);
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const response = await fetch(`${apiUrl}/analysis/key-files`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ repo_url: repoUrl }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch repository files");
-      }
-
-      const data: IdentifyKeyFilesResponse = await response.json();
-      setFiles(data.all_files);
-      setKeyFiles(data.key_files);
-
-      // Once we have files, start the streaming analysis
-      await startAnalysis();
-
-      // Important: Don't call refreshAnalysis here and don't set isAnalyzing to false
-      // Let the event stream completion handle the state change
-    } catch (err) {
-      console.error("Error:", err);
-      setIsAnalyzing(false);
-    }
-  };
-
-  const handleRefresh = () => {
-    // Clear created issues state
-    localStorage.removeItem("createdIssues");
-
-    // We don't want to call refreshAnalysis here directly
-    // Instead, fetch repository files and start streaming analysis
-    fetchRepositoryFiles();
   };
 
   // Add an effect to load analysis after streaming completes
@@ -278,6 +110,17 @@ export default function StatsPage() {
       refreshAnalysis();
     }
   }, [isAnalyzing, files.length, data, refreshAnalysis]);
+
+  const handleRefresh = () => {
+    // Clear created issues state
+    localStorage.removeItem("createdIssues");
+
+    // Reset initial load flag to ensure we can restart analysis from scratch
+    setInitialLoadDone(false);
+
+    // Start the streaming analysis process
+    startAnalysis();
+  };
 
   return (
     <StatsLayout
@@ -328,43 +171,22 @@ export default function StatsPage() {
         )}
       </AnimatePresence>
 
-      {/* Show File Tree and Important Files during analysis */}
+      {/* Show Analysis View during analysis */}
       {isAnalyzing ? (
-        <div className="mt-8">
-          <div className="mb-6 flex justify-center">
-            <AnimatedLogo size={100} loadingText="Finding important files..." />
-          </div>
-
-          {files.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-              <div
-                className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 ${theme === "dark" ? "text-white" : "text-black"}`}
-              >
-                <h2 className="text-xl font-semibold mb-4">
-                  Repository Structure
-                </h2>
-                <FileTree files={files} />
-              </div>
-
-              <div
-                className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 ${theme === "dark" ? "text-white" : "text-black"}`}
-              >
-                <h2 className="text-xl font-semibold mb-4">Important Files</h2>
-                <ImportantFiles
-                  key_files={keyFiles}
-                  highlightedFiles={highlightedFiles}
-                />
-              </div>
-            </div>
-          )}
-        </div>
+        <AnalysisView
+          files={files}
+          keyFiles={keyFiles}
+          highlightedFiles={highlightedFiles}
+          theme={theme}
+          issues={analysisIssues}
+        />
       ) : (
         <>
           <StatsDisplay
             analysisData={data}
             loading={loading}
             completedIssues={completedIssues}
-            changedIssueId={changedIssueIdRef.current}
+            changedIssueId={changedIssueId}
             onScoreUpdate={handleScoreUpdate}
           />
 
@@ -395,7 +217,7 @@ export default function StatsPage() {
                         {selectedIssues.size} selected
                       </span>
                       <button
-                        onClick={handleCompleteAll}
+                        onClick={handleCompleteSelected}
                         className={`flex items-center px-3 sm:px-4 py-2 ${
                           theme === "dark"
                             ? "bg-[#2A2D31] text-gray-300 hover:bg-[#353A40]"
