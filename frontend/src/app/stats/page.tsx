@@ -112,9 +112,6 @@ export default function StatsPage() {
   }, [isAnalyzing, files.length, data, refreshAnalysis]);
 
   const handleRefresh = () => {
-    // Clear created issues state
-    localStorage.removeItem("createdIssues");
-
     // Reset initial load flag to ensure we can restart analysis from scratch
     setInitialLoadDone(false);
 
