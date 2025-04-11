@@ -4,11 +4,12 @@ import { useState } from "react";
 import { Recommendation } from "../types/api";
 
 interface AnalysisEvent {
-  type: "PROGRESS" | "COMPLETE" | "HEARTBEAT";
+  type: "PROGRESS" | "RECOMMENDATION" | "COMPLETE" | "HEARTBEAT";
   chunk_index?: number;
   files?: string[];
   recommendations_count?: number;
   recommendations?: Recommendation[];
+  recommendation?: Recommendation;
   analysis_timestamp?: string;
 }
 
@@ -118,17 +119,26 @@ export function useStreamingAnalysis(repoUrl: string) {
           }));
         }
 
-        // Add any recommendations/issues as they come in
-        if (
-          data.recommendations &&
-          Array.isArray(data.recommendations) &&
-          data.recommendations.length > 0
-        ) {
-          const newIssues = data.recommendations as Recommendation[];
-          setState((prev) => ({
-            ...prev,
-            analysisIssues: [...prev.analysisIssues, ...newIssues],
-          }));
+        // Handle both array of recommendations and single recommendation
+        if (data.type === "RECOMMENDATION") {
+          if (
+            data.recommendations &&
+            Array.isArray(data.recommendations) &&
+            data.recommendations.length > 0
+          ) {
+            const newIssues = data.recommendations as Recommendation[];
+            setState((prev) => ({
+              ...prev,
+              analysisIssues: [...prev.analysisIssues, ...newIssues],
+            }));
+          } else if (data.recommendation) {
+            // Handle single recommendation - ensuring it's not undefined
+            const recommendation = data.recommendation;
+            setState((prev) => ({
+              ...prev,
+              analysisIssues: [...prev.analysisIssues, recommendation],
+            }));
+          }
         }
 
         if (data.type === "COMPLETE") {

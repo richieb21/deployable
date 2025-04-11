@@ -424,7 +424,7 @@ ${issue.category}
 
           return (
             <IssueItem
-              key={issueId}
+              key={`${issueId}-${index}`}
               issue={issue}
               index={index}
               issueId={issueId}

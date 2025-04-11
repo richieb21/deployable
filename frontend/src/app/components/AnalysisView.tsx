@@ -32,6 +32,7 @@ export const AnalysisView = ({
   const [statusText, setStatusText] = useState("Initializing");
   const [dots, setDots] = useState("");
   const animationRef = useRef<number | null>(null);
+  const issuesContainerRef = useRef<HTMLDivElement>(null);
 
   // Animate the dots
   useEffect(() => {
@@ -141,6 +142,46 @@ export const AnalysisView = ({
     };
   }, [targetProgress]);
 
+  // Auto-scroll issues container when new issues arrive
+  useEffect(() => {
+    if (issuesContainerRef.current && issues.length > 0) {
+      issuesContainerRef.current.scrollTop =
+        issuesContainerRef.current.scrollHeight;
+    }
+  }, [issues.length]);
+
+  // Get color for issue severity
+  const getSeverityColor = (severity: string) => {
+    switch (severity?.toLowerCase()) {
+      case "critical":
+        return theme === "dark" ? "text-red-400" : "text-red-600";
+      case "high":
+        return theme === "dark" ? "text-orange-400" : "text-orange-600";
+      case "medium":
+        return theme === "dark" ? "text-yellow-400" : "text-yellow-600";
+      case "low":
+        return theme === "dark" ? "text-blue-400" : "text-blue-600";
+      default:
+        return theme === "dark" ? "text-gray-400" : "text-gray-600";
+    }
+  };
+
+  // Get background color for issue severity
+  const getSeverityBgColor = (severity: string) => {
+    switch (severity?.toLowerCase()) {
+      case "critical":
+        return theme === "dark" ? "bg-red-950/30" : "bg-red-50";
+      case "high":
+        return theme === "dark" ? "bg-orange-950/30" : "bg-orange-50";
+      case "medium":
+        return theme === "dark" ? "bg-yellow-950/30" : "bg-yellow-50";
+      case "low":
+        return theme === "dark" ? "bg-blue-950/30" : "bg-blue-50";
+      default:
+        return theme === "dark" ? "bg-gray-800/30" : "bg-gray-100";
+    }
+  };
+
   return (
     <div className="mt-2 flex flex-col items-center">
       {/* Container to limit width on all content */}
@@ -233,16 +274,19 @@ export const AnalysisView = ({
               >
                 Issues
               </h2>
-              <div className="max-h-[calc(100vh-180px)] overflow-y-auto pr-2">
+              <div
+                ref={issuesContainerRef}
+                className="max-h-[calc(100vh-180px)] overflow-y-auto pr-2"
+              >
                 {issues && issues.length > 0 ? (
                   <ul className="space-y-2">
                     {issues.map((issue, index) => (
                       <li
-                        key={index}
-                        className="border-b border-gray-800/20 pb-2"
+                        key={issue.title + index}
+                        className={`${getSeverityBgColor(issue.severity)} rounded-lg p-3 mb-2`}
                       >
                         <div
-                          className={`font-medium ${theme === "dark" ? "text-yellow-400" : "text-yellow-600"}`}
+                          className={`font-medium ${getSeverityColor(issue.severity)}`}
                         >
                           {issue.title}
                         </div>
@@ -252,7 +296,8 @@ export const AnalysisView = ({
                         <div
                           className={`text-xs mt-1 ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}
                         >
-                          {issue.description.substring(0, 100)}...
+                          {issue.description.substring(0, 100)}
+                          {issue.description.length > 100 && "..."}
                         </div>
                       </li>
                     ))}

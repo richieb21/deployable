@@ -34,7 +34,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-CURRENT_LLM_PROIVDER = "quasar"
+CURRENT_LLM_PROIVDER = "groq"
 recommendations_lock = threading.Lock()
 
 
@@ -271,7 +271,7 @@ async def identify_key_files(
     github_service = GithubService(redis_client=redis_client)
     all_files = github_service.list_filenames(repo_url)
 
-    llm = create_language_service("quasar")
+    llm = create_language_service(CURRENT_LLM_PROIVDER)
 
     prompt_identify = llm.identify_files_prompt(all_files)
     prompt_tech_stack = llm.get_tech_stack_prompt(all_files)
