@@ -13,7 +13,7 @@ export function AnimatedLogo({
   size = 100,
   className = "",
   theme = "dark",
-  loadingText = "Analyzing...",
+  // loadingText = "Analyzing...",
 }: AnimatedLogoProps) {
   const [transform, setTransform] = useState("translate(0, 0)");
 
@@ -68,7 +68,7 @@ export function AnimatedLogo({
           />
         </svg>
       </div>
-      {loadingText && (
+      {/* {loadingText && (
         <p
           className={`mt-4 text-sm ${
             theme === "dark" ? "text-gray-400" : "text-gray-600"
@@ -76,7 +76,7 @@ export function AnimatedLogo({
         >
           {loadingText}
         </p>
-      )}
+      )} */}
     </div>
   );
 }

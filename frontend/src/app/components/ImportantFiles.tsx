@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 
 interface ImportantFilesProps {
   key_files: {
@@ -25,6 +26,7 @@ export const ImportantFiles = ({
     backend: [],
     infra: [],
   });
+  const [animatedFiles, setAnimatedFiles] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const sections: StackCategory[] = ["frontend", "backend", "infra"];
@@ -56,14 +58,37 @@ export const ImportantFiles = ({
     if (!lastVisibleSection || !key_files[lastVisibleSection]) return;
 
     key_files[lastVisibleSection].forEach((file, index) => {
-      setTimeout(() => {
-        setVisibleFiles((prev) => ({
-          ...prev,
-          [lastVisibleSection]: [...prev[lastVisibleSection], file],
-        }));
-      }, 100 * (index + 1));
+      setTimeout(
+        () => {
+          setVisibleFiles((prev) => ({
+            ...prev,
+            [lastVisibleSection]: [...prev[lastVisibleSection], file],
+          }));
+
+          // If file is already highlighted, add it to animated files after a short delay
+          if (highlightedFiles.has(file)) {
+            setTimeout(() => {
+              setAnimatedFiles((prev) => new Set([...prev, file]));
+            }, 100);
+          }
+        },
+        100 * (index + 1)
+      );
     });
-  }, [visibleSections, key_files]);
+  }, [visibleSections, key_files, highlightedFiles]);
+
+  // Add newly highlighted files to animated files
+  useEffect(() => {
+    highlightedFiles.forEach((file) => {
+      if (
+        visibleFiles.frontend.includes(file) ||
+        visibleFiles.backend.includes(file) ||
+        visibleFiles.infra.includes(file)
+      ) {
+        setAnimatedFiles((prev) => new Set([...prev, file]));
+      }
+    });
+  }, [highlightedFiles, visibleFiles]);
 
   const renderFiles = (files: string[], section: StackCategory) => {
     return files.map((file) => (
@@ -75,15 +100,36 @@ export const ImportantFiles = ({
             : "translate-y-[-8px] opacity-0"
         }`}
       >
-        <span
-          className={`text-sm text-gray-700 dark:text-gray-300 px-2 py-1 rounded transition-colors ${
-            highlightedFiles.has(file)
-              ? "bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400"
-              : ""
-          }`}
-        >
-          {file}
-        </span>
+        <div className="relative overflow-hidden rounded">
+          {highlightedFiles.has(file) && (
+            <motion.div
+              className="absolute inset-0 bg-green-500/20 dark:bg-green-500/30"
+              initial={{ width: 0 }}
+              animate={{ width: "100%" }}
+              transition={{
+                duration: 0.5,
+                ease: "easeInOut",
+                // Only animate once when file first becomes highlighted
+                delay: animatedFiles.has(file) ? 0 : 0.1,
+              }}
+              onAnimationComplete={() => {
+                if (!animatedFiles.has(file)) {
+                  setAnimatedFiles((prev) => new Set([...prev, file]));
+                }
+              }}
+              style={{ originX: 0 }}
+            />
+          )}
+          <span
+            className={`relative z-10 inline-block text-sm px-2 py-1 rounded transition-colors ${
+              highlightedFiles.has(file)
+                ? "text-green-600 dark:text-green-400"
+                : "text-gray-700 dark:text-gray-300"
+            }`}
+          >
+            {file}
+          </span>
+        </div>
       </div>
     ));
   };
@@ -114,45 +160,6 @@ export const ImportantFiles = ({
       {renderSection("frontend", key_files.frontend)}
       {renderSection("backend", key_files.backend)}
       {renderSection("infra", key_files.infra)}
-    </div>
-  );
-};
-
-interface KeyFileCategoryProps {
-  category: string;
-  title: string;
-  files: string[];
-  highlightedFiles: Set<string>;
-}
-
-const KeyFileCategory = ({
-  category,
-  title,
-  files,
-  highlightedFiles,
-}: KeyFileCategoryProps) => {
-  return (
-    <div>
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-        {title}
-      </h3>
-      <ul className="space-y-2">
-        {files.map((file) => {
-          const isHighlighted = highlightedFiles.has(file);
-          return (
-            <li
-              key={file}
-              className={`text-sm text-gray-600 dark:text-gray-400 px-2 py-1 rounded transition-colors ${
-                isHighlighted
-                  ? "bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400"
-                  : ""
-              }`}
-            >
-              {file}
-            </li>
-          );
-        })}
-      </ul>
     </div>
   );
 };
