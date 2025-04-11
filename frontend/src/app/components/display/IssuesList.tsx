@@ -15,13 +15,13 @@
 
 "use client";
 
-import { Recommendation } from "../types/api";
+import { Recommendation } from "@/app/types/api";
 import { useState, useEffect, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
-import { useTheme } from "../context/ThemeContext";
-import IssueItem from "./IssueItem";
-import { AnimatedLogo } from "./AnimatedLogo";
-import ErrorModal from "./ErrorModal";
+import { useTheme } from "@/app/context/ThemeContext";
+import IssueItem from "@/app/components/display/IssueItem";
+import { AnimatedLogo } from "@/app/components/ui/AnimatedLogo";
+import ErrorModal from "@/app/components/shared/ErrorModal";
 
 // Get severity weight for sorting (higher number = higher severity)
 const getSeverityWeight = (severity: string): number => {

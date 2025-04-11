@@ -1,10 +1,10 @@
 "use client";
 
 import { Hero } from "./Hero";
-import { Header } from "./Header";
-import { Footer } from "./Footer";
-import { Features } from "./Features";
-import { useTheme } from "../context/ThemeContext";
+import { Header } from "@/app/components/shared/Header";
+import { Footer } from "@/app/components/shared/Footer";
+import { Features } from "@/app/components/landing/Features";
+import { useTheme } from "@/app/context/ThemeContext";
 
 export const HomeContent = () => {
   const { theme } = useTheme();

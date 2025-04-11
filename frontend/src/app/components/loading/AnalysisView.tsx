@@ -1,13 +1,13 @@
 "use client";
 
-import { AnimatedLogo } from "./AnimatedLogo";
-import { FileTree } from "./FileTree";
-import { ImportantFiles } from "./ImportantFiles";
+import { AnimatedLogo } from "@/app/components/ui/AnimatedLogo";
+import { FileTree } from "@/app/components/loading/FileTree";
+import { ImportantFiles } from "@/app/components/loading/ImportantFiles";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Import the Recommendation type
-import { Recommendation } from "../types/api";
+import { Recommendation } from "@/app/types/api";
 
 interface AnalysisViewProps {
   files: string[];

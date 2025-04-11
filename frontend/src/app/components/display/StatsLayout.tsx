@@ -1,8 +1,8 @@
 "use client";
 
-import { Header } from "./Header";
-import { Footer } from "./Footer";
-import { useTheme } from "../context/ThemeContext";
+import { Header } from "@/app/components/shared/Header";
+import { Footer } from "@/app/components/shared/Footer";
+import { useTheme } from "@/app/context/ThemeContext";
 
 interface StatsLayoutProps {
   children: React.ReactNode;

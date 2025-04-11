@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatedLogo } from "@/app/components/AnimatedLogo";
+import { AnimatedLogo } from "@/app/components/ui/AnimatedLogo";
 
 export default function LogoTest() {
   return (

@@ -13,8 +13,8 @@
  */
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Recommendation } from "../types/api";
-import { useTheme } from "../context/ThemeContext";
+import { Recommendation } from "@/app/types/api";
+import { useTheme } from "@/app/context/ThemeContext";
 import IssueDetails from "./IssueDetails";
 
 type IssueSeverity = "HIGH" | "MEDIUM" | "LOW";
