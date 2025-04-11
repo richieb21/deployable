@@ -3,8 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ThemeToggle } from "./ThemeToggle";
-import { useTheme } from "../context/ThemeContext";
+import { ThemeToggle } from "@/app/components/shared/ThemeToggle";
+import { useTheme } from "@/app/context/ThemeContext";
 import { useState } from "react";
 
 export interface HeaderProps {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTheme } from "../context/ThemeContext";
+import { useTheme } from "@/app/context/ThemeContext";
 
 /**
  * Hero Component

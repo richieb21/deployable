@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ImportantFiles } from "@/app/components/ImportantFiles";
-import { FileTree } from "../../components/FileTree";
+import { ImportantFiles } from "@/app/components/loading/ImportantFiles";
+import { FileTree } from "../../components/loading/FileTree";
 import { IdentifyKeyFilesResponse } from "@/app/types/api";
 
 interface Recommendation {

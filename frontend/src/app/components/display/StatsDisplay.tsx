@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { AnalysisResponse } from "../types/api";
-import { useTheme } from "../context/ThemeContext";
-import { AnimatedLogo } from "./AnimatedLogo";
+import { AnalysisResponse } from "@/app/types/api";
+import { useTheme } from "@/app/context/ThemeContext";
+import { AnimatedLogo } from "@/app/components/ui/AnimatedLogo";
 
 type StatMetric = {
   name: string;
@@ -76,8 +76,8 @@ const CircleGraph = ({
         ? 55
         : 70
       : window.innerWidth < 640
-      ? 35
-      : 45;
+        ? 35
+        : 45;
   const circumference = 2 * Math.PI * radius;
 
   // Calculate the dash offset based on the display value (0-100)
@@ -120,8 +120,8 @@ const CircleGraph = ({
                   ? "10"
                   : "14"
                 : window.innerWidth < 640
-                ? "8"
-                : "10"
+                  ? "8"
+                  : "10"
             }
             fill="transparent"
             className={theme === "dark" ? "text-[#2A2A2A]" : "text-gray-200"}
@@ -141,8 +141,8 @@ const CircleGraph = ({
                   ? "10"
                   : "14"
                 : window.innerWidth < 640
-                ? "8"
-                : "10"
+                  ? "8"
+                  : "10"
             }
             fill="transparent"
             strokeDasharray={circumference}
@@ -429,8 +429,8 @@ export const StatsDisplay = ({
           mainMetric.value === 100
             ? "bg-green-900/10 border-green-900/20"
             : theme === "dark"
-            ? "bg-[#1A1817] border-transparent"
-            : "bg-white border-gray-200"
+              ? "bg-[#1A1817] border-transparent"
+              : "bg-white border-gray-200"
         }`}
       >
         <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 md:gap-8">
@@ -456,8 +456,8 @@ export const StatsDisplay = ({
               {mainMetric.value >= 80
                 ? "Great Overall"
                 : mainMetric.value >= 50
-                ? "Needs Improvement"
-                : "Critical Issues Found"}
+                  ? "Needs Improvement"
+                  : "Critical Issues Found"}
             </h3>
             <p
               className="text-base sm:text-lg leading-relaxed"
@@ -475,8 +475,8 @@ export const StatsDisplay = ({
           metrics.every((metric) => metric.value === 100)
             ? "bg-green-900/10 border-green-900/20"
             : theme === "dark"
-            ? "bg-[#1A1817] border-transparent"
-            : "bg-white border-gray-200"
+              ? "bg-[#1A1817] border-transparent"
+              : "bg-white border-gray-200"
         }`}
       >
         <h3

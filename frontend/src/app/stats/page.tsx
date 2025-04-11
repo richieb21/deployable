@@ -1,13 +1,13 @@
 "use client";
 
-import { StatsDisplay } from "../components/StatsDisplay";
-import { IssuesList } from "../components/IssuesList";
-import { AnalysisView } from "../components/AnalysisView";
+import { StatsDisplay } from "@/app/components/display/StatsDisplay";
+import { IssuesList } from "@/app/components/display/IssuesList";
+import { AnalysisView } from "@/app/components/loading/AnalysisView";
 import { useSearchParams } from "next/navigation";
-import { StatsLayout } from "../components/StatsLayout";
-import { useAnalysis } from "../hooks/useAnalysis";
-import { useStreamingAnalysis } from "../hooks/useStreamingAnalysis";
-import { useIssueCompletion } from "../hooks/useIssueCompletion";
+import { StatsLayout } from "@/app/components/display/StatsLayout";
+import { useAnalysis } from "@/app/hooks/useAnalysis";
+import { useStreamingAnalysis } from "@/app/hooks/useStreamingAnalysis";
+import { useIssueCompletion } from "@/app/hooks/useIssueCompletion";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";

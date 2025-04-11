@@ -12,8 +12,8 @@
  * and state via props from the parent IssueItem component.
  */
 
-import { Recommendation } from "../types/api";
-import { useTheme } from "../context/ThemeContext";
+import { Recommendation } from "@/app/types/api";
+import { useTheme } from "@/app/context/ThemeContext";
 
 interface IssueDetailsProps {
   issue: Recommendation;
