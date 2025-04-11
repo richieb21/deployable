@@ -14,7 +14,6 @@ export const Footer = () => {
   return (
     <footer
       style={{
-        backgroundColor: theme === "dark" ? "#121212" : "#f9fafb",
         color: theme === "dark" ? "#6b7280" : "#9ca3af",
         borderTop: theme === "dark" ? "none" : "1px solid #f3f4f6",
       }}
