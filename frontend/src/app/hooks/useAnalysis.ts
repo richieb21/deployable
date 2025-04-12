@@ -7,9 +7,6 @@ import {
   KeyFiles,
 } from "../types/api";
 
-// Cache key prefix for storing analysis results
-const CACHE_KEY_PREFIX = "deployable_analysis_";
-
 export function useAnalysis(repoUrl: string) {
   const [data, setData] = useState<AnalysisResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -19,26 +16,6 @@ export function useAnalysis(repoUrl: string) {
   useEffect(() => {
     async function fetchAnalysis() {
       if (!repoUrl) return;
-
-      // Create a cache key based on the repo URL
-      const cacheKey = `${CACHE_KEY_PREFIX}${repoUrl}`;
-
-      // Check if we have cached results
-      const cachedData = localStorage.getItem(cacheKey);
-
-      if (cachedData) {
-        try {
-          const parsedData = JSON.parse(cachedData);
-          setData(parsedData);
-          setLoading(false);
-          console.log("Using cached analysis results");
-          return;
-        } catch (err) {
-          // If there's an error parsing the cached data, we'll fetch fresh data
-          console.warn("Error parsing cached data:", err);
-          localStorage.removeItem(cacheKey);
-        }
-      }
 
       setLoading(true);
       try {
@@ -80,14 +57,6 @@ export function useAnalysis(repoUrl: string) {
         }
 
         const result = await analysisResponse.json();
-
-        // Cache the results
-        try {
-          localStorage.setItem(cacheKey, JSON.stringify(result));
-        } catch (err) {
-          console.warn("Error caching analysis results:", err);
-        }
-
         setData(result);
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
@@ -101,13 +70,6 @@ export function useAnalysis(repoUrl: string) {
 
   // Function to clear the cache and force a refresh
   const refreshAnalysis = async () => {
-    // Clear the cache for this repo
-    const cacheKey = `${CACHE_KEY_PREFIX}${repoUrl}`;
-    localStorage.removeItem(cacheKey);
-
-    // Also clear created issues when refreshing
-    localStorage.removeItem("createdIssues");
-
     setLoading(true);
     try {
       // First, fetch key files
@@ -144,14 +106,6 @@ export function useAnalysis(repoUrl: string) {
       }
 
       const result = await analysisResponse.json();
-
-      // Cache the new results
-      try {
-        localStorage.setItem(cacheKey, JSON.stringify(result));
-      } catch (err) {
-        console.warn("Error caching analysis results:", err);
-      }
-
       setData(result);
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));

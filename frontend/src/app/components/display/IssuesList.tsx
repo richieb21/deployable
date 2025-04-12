@@ -93,30 +93,40 @@ export const IssuesList = ({
     showExplanation: false,
   });
 
-  // Load created issues from localStorage on mount
+  // Load created issues from Redis on mount
   useEffect(() => {
-    try {
-      const storedCreatedIssues = localStorage.getItem("createdIssues");
-      if (storedCreatedIssues) {
-        setCreatedIssues(JSON.parse(storedCreatedIssues));
+    async function loadCreatedIssues() {
+      try {
+        const response = await fetch("/api/issues/created");
+        if (response.ok) {
+          const data = await response.json();
+          setCreatedIssues(data);
+        }
+      } catch (error) {
+        console.error("Error loading created issues:", error);
       }
-    } catch (error) {
-      console.error("Error loading created issues:", error);
     }
+    loadCreatedIssues();
   }, []);
 
-  // Save created issues to localStorage when they change
+  // Save created issues to Redis when they change
   useEffect(() => {
     if (Object.keys(createdIssues).length > 0) {
       try {
-        localStorage.setItem("createdIssues", JSON.stringify(createdIssues));
+        fetch("/api/issues/created", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(createdIssues),
+        });
       } catch (error) {
         console.error("Error saving created issues:", error);
       }
     }
   }, [createdIssues]);
 
-  // Save completed issues to localStorage when they change
+  // Save completed issues to Redis when they change
   useEffect(() => {
     // Store previous state for comparison
     const hasChanged =
@@ -125,10 +135,13 @@ export const IssuesList = ({
 
     if (Object.keys(completedIssues).length > 0 && hasChanged) {
       try {
-        localStorage.setItem(
-          "completedIssues",
-          JSON.stringify(completedIssues)
-        );
+        fetch("/api/issues/completed", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(completedIssues),
+        });
 
         // Notify parent component about the change with the changed issue ID
         if (onIssueStatusChange && changedIssueIdRef.current) {

@@ -9,7 +9,9 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: https:",
+      "media-src 'self' https://yangstevenwebsite.s3.us-east-1.amazonaws.com",
       "connect-src 'self' http://localhost:8000 ws://localhost:8000",
+
       "frame-ancestors 'none'", // Prevent embedding in iframes
       "form-action 'self'", // Restrict form submissions to same origin
       "base-uri 'self'", // Restrict base tag href

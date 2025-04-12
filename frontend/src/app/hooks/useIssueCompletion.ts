@@ -9,41 +9,47 @@ export function useIssueCompletion() {
   const prevCompletedCountRef = useRef(0);
   const changedIssueIdRef = useRef<string | null>(null);
 
-  // Load completed issues from localStorage on mount
+  // Load completed issues from Redis on mount
   useEffect(() => {
-    try {
-      const storedCompletedIssues = localStorage.getItem("completedIssues");
-      if (storedCompletedIssues) {
-        const parsed = JSON.parse(storedCompletedIssues);
-        setCompletedIssues(parsed);
-        prevCompletedCountRef.current = Object.keys(parsed).length;
+    async function loadCompletedIssues() {
+      try {
+        const response = await fetch("/api/issues/completed");
+        if (response.ok) {
+          const data = await response.json();
+          setCompletedIssues(data);
+          prevCompletedCountRef.current = Object.keys(data).length;
+        }
+      } catch (error) {
+        console.error("Error loading completed issues:", error);
       }
-    } catch (error) {
-      console.error("Error loading completed issues:", error);
     }
+    loadCompletedIssues();
   }, []);
 
   // Handle issue status changes
-  const handleIssueStatusChange = (
+  const handleIssueStatusChange = async (
     updatedCompletedIssues: { [key: string]: boolean },
     changedIssueId: string
   ) => {
     changedIssueIdRef.current = changedIssueId;
     setCompletedIssues(updatedCompletedIssues);
 
-    // Save to localStorage
+    // Save to Redis
     try {
-      localStorage.setItem(
-        "completedIssues",
-        JSON.stringify(updatedCompletedIssues)
-      );
+      await fetch("/api/issues/completed", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedCompletedIssues),
+      });
     } catch (error) {
       console.error("Error saving completed issues:", error);
     }
   };
 
   // Handle bulk completion
-  const handleCompleteAll = (selectedIssues: Set<string>) => {
+  const handleCompleteAll = async (selectedIssues: Set<string>) => {
     if (selectedIssues.size === 0) return;
 
     // Create a copy of the current completedIssues
@@ -57,12 +63,15 @@ export function useIssueCompletion() {
     // Update state
     setCompletedIssues(updatedCompletedIssues);
 
-    // Save to localStorage
+    // Save to Redis
     try {
-      localStorage.setItem(
-        "completedIssues",
-        JSON.stringify(updatedCompletedIssues)
-      );
+      await fetch("/api/issues/completed", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedCompletedIssues),
+      });
     } catch (error) {
       console.error("Error saving completed issues:", error);
     }
@@ -74,9 +83,15 @@ export function useIssueCompletion() {
   };
 
   // Clear all completed issues
-  const clearCompletedIssues = () => {
+  const clearCompletedIssues = async () => {
     setCompletedIssues({});
-    localStorage.removeItem("completedIssues");
+    try {
+      await fetch("/api/issues/completed", {
+        method: "DELETE",
+      });
+    } catch (error) {
+      console.error("Error clearing completed issues:", error);
+    }
     changedIssueIdRef.current = null;
     prevCompletedCountRef.current = 0;
   };

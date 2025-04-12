@@ -37,13 +37,11 @@ export const Hero = () => {
       ? {
           background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
           color: "white",
-          boxShadow: "0 4px 14px rgba(16, 185, 129, 0.4)",
           border: "none",
         }
       : {
           background: "linear-gradient(135deg, #ea580c 0%, #ea580c 100%)",
           color: "white",
-          boxShadow: "0 4px 14px #ea580c",
           border: "none",
         };
 
@@ -60,9 +58,13 @@ export const Hero = () => {
                 : "none",
             backgroundClip: theme === "dark" ? "text" : "unset",
             WebkitBackgroundClip: theme === "dark" ? "text" : "unset",
+            position: "relative",
           }}
         >
           deployable
+          {theme === "dark" && (
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-300/30 to-transparent animate-shine" />
+          )}
         </h2>
         <p
           className="text-base md:text-xl max-w-2xl mx-auto px-2"
@@ -120,15 +122,21 @@ export const Hero = () => {
         {/* Add keyframe animation for the shine effect */}
         <style jsx global>{`
           @keyframes shine {
-            from {
-              transform: translateX(-100%);
+            0% {
+              transform: translateX(-100%) skewX(-15deg);
+              opacity: 0;
             }
-            to {
-              transform: translateX(100%);
+            50% {
+              opacity: 0.5;
+            }
+            100% {
+              transform: translateX(100%) skewX(-15deg);
+              opacity: 0;
             }
           }
           .animate-shine {
-            animation: shine 2s infinite;
+            animation: shine 4s infinite;
+            mix-blend-mode: overlay;
           }
         `}</style>
       </div>

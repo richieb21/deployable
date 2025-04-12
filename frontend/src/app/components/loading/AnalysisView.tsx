@@ -157,15 +157,15 @@ export const AnalysisView = ({
   const getSeverityColor = (severity: string) => {
     switch (severity?.toLowerCase()) {
       case "critical":
-        return theme === "dark" ? "text-red-400" : "text-red-100";
+        return theme === "dark" ? "text-red-300" : "text-red-800";
       case "high":
-        return theme === "dark" ? "text-orange-400" : "text-orange-100";
+        return theme === "dark" ? "text-orange-300" : "text-orange-800";
       case "medium":
-        return theme === "dark" ? "text-yellow-400" : "text-yellow-100";
+        return theme === "dark" ? "text-yellow-300" : "text-yellow-800";
       case "low":
-        return theme === "dark" ? "text-blue-400" : "text-blue-100";
+        return theme === "dark" ? "text-emerald-300" : "text-emerald-800";
       default:
-        return theme === "dark" ? "text-gray-400" : "text-gray-100";
+        return theme === "dark" ? "text-gray-300" : "text-gray-800";
     }
   };
 
@@ -173,15 +173,15 @@ export const AnalysisView = ({
   const getSeverityBgColor = (severity: string) => {
     switch (severity?.toLowerCase()) {
       case "critical":
-        return theme === "dark" ? "bg-red-950/30" : "bg-red-600";
+        return theme === "dark" ? "bg-red-800/60" : "bg-red-200";
       case "high":
-        return theme === "dark" ? "bg-orange-950/30" : "bg-orange-600";
+        return theme === "dark" ? "bg-orange-800/60" : "bg-orange-200";
       case "medium":
-        return theme === "dark" ? "bg-yellow-950/30" : "bg-yellow-600";
+        return theme === "dark" ? "bg-yellow-700/60" : "bg-yellow-200";
       case "low":
-        return theme === "dark" ? "bg-blue-950/30" : "bg-blue-600";
+        return theme === "dark" ? "bg-emerald-800/70" : "bg-emerald-200";
       default:
-        return theme === "dark" ? "bg-gray-800/30" : "bg-gray-600";
+        return theme === "dark" ? "bg-gray-800/60" : "bg-gray-200";
     }
   };
 
@@ -197,8 +197,8 @@ export const AnalysisView = ({
             </div>
             <div className="flex-1 flex flex-col">
               <div
-                className={`text-sm mb-2 ${
-                  theme === "dark" ? "text-gray-600" : "text-gray-400"
+                className={`text-base font-medium mb-2 ${
+                  theme === "dark" ? "text-gray-200" : "text-gray-600"
                 }`}
               >
                 {statusText}
@@ -225,7 +225,7 @@ export const AnalysisView = ({
             {/* Repository Structure (3/12 = 25% on desktop, full width on mobile) */}
             <div
               className={`md:col-span-3 ${
-                theme === "dark" ? "bg-[#13151a]" : "bg-gray-50"
+                theme === "dark" ? "bg-gray-900/60" : "bg-gray-50"
               } rounded-xl shadow-sm p-3 md:p-4 border ${
                 theme === "dark" ? "border-gray-800" : "border-gray-200"
               }
@@ -246,7 +246,7 @@ export const AnalysisView = ({
             {/* Important Files (5/12 ≈ 42% on desktop, full width on mobile) */}
             <div
               className={`md:col-span-5 ${
-                theme === "dark" ? "bg-[#13151a]" : "bg-gray-50"
+                theme === "dark" ? "bg-gray-900/60" : "bg-gray-50"
               } rounded-xl shadow-sm p-3 md:p-4 border ${
                 theme === "dark" ? "border-gray-800" : "border-gray-200"
               }
@@ -270,7 +270,7 @@ export const AnalysisView = ({
             {/* Issues (4/12 ≈ 33% on desktop, full width on mobile) */}
             <div
               className={`md:col-span-4 ${
-                theme === "dark" ? "bg-[#13151a]" : "bg-gray-50"
+                theme === "dark" ? "bg-gray-900/60" : "bg-gray-50"
               } rounded-xl shadow-sm p-3 md:p-4 border ${
                 theme === "dark" ? "border-gray-800" : "border-gray-200"
               }

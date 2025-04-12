@@ -190,7 +190,20 @@ export const Features = () => {
           </div>
 
           {/* Right Column - Demo Video */}
-          <div className="relative aspect-video rounded-xl overflow-hidden shadow-2xl bg-gray-900/5 dark:bg-gray-800/20 backdrop-blur-sm border border-white/10 dark:border-black/10"></div>
+          <div className="relative aspect-video rounded-xl overflow-hidden shadow-2xl bg-gray-900/5 dark:bg-gray-800/20 backdrop-blur-sm border border-white/10 dark:border-black/10">
+            <video
+              ref={videoRef}
+              className="w-full h-full object-cover"
+              controls
+              muted
+              loop
+              playsInline
+              poster="/aws-video-poster.jpg"
+            >
+              <source src="https://yangstevenwebsite.s3.us-east-1.amazonaws.com/marketloo.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
         </div>
       </div>
     </div>

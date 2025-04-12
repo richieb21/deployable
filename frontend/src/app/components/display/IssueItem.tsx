@@ -71,17 +71,13 @@ const IssueItem = ({
 
   return (
     <div className="mb-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.3 }}
+      <div
         className={`relative rounded-t-xl ${
           expandedIssue === index ? "" : "rounded-b-xl"
         } overflow-hidden`}
         style={{
           backgroundColor: isCompleted
-            ? "rgba(20, 83, 45, 0.05)"
+            ? "rgba(27, 91, 53, 0.10)"
             : theme === "dark"
               ? severityColor === "bg-red-500"
                 ? "rgba(239, 68, 68, 0.05)"
@@ -91,11 +87,11 @@ const IssueItem = ({
                     ? "rgba(59, 130, 246, 0.05)"
                     : "#1A1817"
               : severityColor === "bg-red-500"
-                ? "rgba(239, 68, 68, 0.02)"
+                ? "rgba(239, 68, 68, 0.08)"
                 : severityColor === "bg-yellow-500"
-                  ? "rgba(234, 179, 8, 0.02)"
+                  ? "rgba(234, 179, 8, 0.08)"
                   : severityColor === "bg-blue-500"
-                    ? "rgba(59, 130, 246, 0.02)"
+                    ? "rgba(59, 130, 246, 0.08)"
                     : "white",
           borderWidth: 1,
           borderStyle: "solid",
@@ -190,7 +186,7 @@ const IssueItem = ({
                   style={{
                     backgroundColor: isCreated
                       ? theme === "dark"
-                        ? "rgba(22, 163, 74, 0.3)"
+                        ? "rgba(22, 163, 74, 0.4)"
                         : "rgba(22, 163, 74, 0.2)"
                       : isCreatingIssue
                         ? theme === "dark"
@@ -201,7 +197,7 @@ const IssueItem = ({
                           : "#e5e7eb",
                     color: isCreated
                       ? theme === "dark"
-                        ? "#4ade80"
+                        ? "#86efac"
                         : "#15803d"
                       : isCreatingIssue
                         ? theme === "dark"
@@ -271,14 +267,14 @@ const IssueItem = ({
                   style={{
                     backgroundColor: isCompleted
                       ? theme === "dark"
-                        ? "rgba(22, 163, 74, 0.3)"
+                        ? "rgba(22, 163, 74, 0.4)"
                         : "rgba(22, 163, 74, 0.2)"
                       : theme === "dark"
                         ? "#2A2D31"
                         : "#e5e7eb",
                     color: isCompleted
                       ? theme === "dark"
-                        ? "#4ade80"
+                        ? "#86efac"
                         : "#15803d"
                       : theme === "dark"
                         ? "#d1d5db"
@@ -325,7 +321,7 @@ const IssueItem = ({
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Expanded issue content */}
       <AnimatePresence>
