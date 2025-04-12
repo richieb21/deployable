@@ -5,10 +5,9 @@ import { IssuesList } from "@/app/components/display/IssuesList";
 import { AnalysisView } from "@/app/components/loading/AnalysisView";
 import { useSearchParams } from "next/navigation";
 import { StatsLayout } from "@/app/components/display/StatsLayout";
-import { useAnalysis } from "@/app/hooks/useAnalysis";
 import { useStreamingAnalysis } from "@/app/hooks/useStreamingAnalysis";
 import { useIssueCompletion } from "@/app/hooks/useIssueCompletion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
 
@@ -31,13 +30,14 @@ export default function StatsPage() {
     handleIssueStatusChange,
     handleCompleteAll,
   } = useIssueCompletion();
-  const { data, loading, error, refreshAnalysis } = useAnalysis(repoUrl);
   const {
     files,
     keyFiles,
     highlightedFiles,
     isAnalyzing,
     analysisIssues,
+    analysisResult,
+    error,
     startAnalysis,
   } = useStreamingAnalysis(repoUrl);
 
@@ -45,15 +45,15 @@ export default function StatsPage() {
   const [overallScore, setOverallScore] = useState(0);
   const [selectedIssues, setSelectedIssues] = useState<Set<string>>(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
-  const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const initialAnalysisTriggered = useRef(false);
 
   // Automatically start analysis when the page loads for the first time
   useEffect(() => {
-    if (!initialLoadDone && !data && !isAnalyzing) {
+    if (!initialAnalysisTriggered.current && !isAnalyzing && !analysisResult) {
       startAnalysis();
-      setInitialLoadDone(true);
+      initialAnalysisTriggered.current = true;
     }
-  }, [data, isAnalyzing, initialLoadDone, startAnalysis]);
+  }, [isAnalyzing, analysisResult, startAnalysis]);
 
   // Handle scroll to show/hide progress bar
   useEffect(() => {
@@ -66,16 +66,16 @@ export default function StatsPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Update overall score when data or completed issues change
+  // Update overall score when analysisResult or completed issues change
   const handleScoreUpdate = (score: number) => {
     setOverallScore(score);
   };
 
   const handleSelectAll = () => {
-    if (!data?.recommendations) return;
+    if (!analysisResult?.recommendations) return;
 
-    // Get all unresolved issues
-    const unresolvedIssues = data.recommendations
+    // Get all unresolved issues from the final analysisResult
+    const unresolvedIssues = analysisResult.recommendations
       .filter((rec) => !completedIssues[`${rec.title}-${rec.file_path}`])
       .map((rec) => `${rec.title}-${rec.file_path}`);
 
@@ -102,22 +102,15 @@ export default function StatsPage() {
     setShowBulkActions(false);
   };
 
-  // Add an effect to load analysis after streaming completes
-  useEffect(() => {
-    // If we have files but analysis is no longer in progress,
-    // and there's no current data, refresh the analysis data
-    if (files.length > 0 && !isAnalyzing && !data) {
-      refreshAnalysis();
-    }
-  }, [isAnalyzing, files.length, data, refreshAnalysis]);
-
   const handleRefresh = () => {
-    // Reset initial load flag to ensure we can restart analysis from scratch
-    setInitialLoadDone(false);
-
-    // Start the streaming analysis process
+    // Reset the trigger flag so analysis starts again
+    initialAnalysisTriggered.current = false;
+    // Start the streaming analysis process again
     startAnalysis();
   };
+
+  // Determine if we should show the final stats view
+  const showStats = !isAnalyzing && analysisResult;
 
   return (
     <StatsLayout
@@ -126,7 +119,7 @@ export default function StatsPage() {
     >
       {/* Floating progress bar */}
       <AnimatePresence>
-        {showProgressBar && (
+        {showProgressBar && showStats && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -168,8 +161,8 @@ export default function StatsPage() {
         )}
       </AnimatePresence>
 
-      {/* Show Analysis View during analysis */}
-      {isAnalyzing ? (
+      {/* Conditionally render AnalysisView or StatsDisplay */}
+      {isAnalyzing && !analysisResult ? (
         <AnalysisView
           files={files}
           keyFiles={keyFiles}
@@ -179,110 +172,118 @@ export default function StatsPage() {
         />
       ) : (
         <>
-          <StatsDisplay
-            analysisData={data}
-            loading={loading}
-            completedIssues={completedIssues}
-            changedIssueId={changedIssueId}
-            onScoreUpdate={handleScoreUpdate}
-          />
-
-          <div className="mt-8 sm:mt-16">
-            <div className="flex flex-col sm:flex-row sm:items-center mb-4 sm:mb-6 max-w-5xl mx-auto px-2">
-              <h2
-                className={`text-xl sm:text-2xl font-bold mb-4 sm:mb-0 ${
-                  theme === "dark" ? "text-white" : "text-gray-900"
-                }`}
-              >
-                Issues to Address
-              </h2>
-
-              <div className="sm:ml-auto flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                <AnimatePresence>
-                  {showBulkActions && (
-                    <motion.div
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      className="flex items-center space-x-2"
-                    >
-                      <span
-                        className={`text-sm ${
-                          theme === "dark" ? "text-gray-400" : "text-gray-600"
-                        }`}
-                      >
-                        {selectedIssues.size} selected
-                      </span>
-                      <button
-                        onClick={handleCompleteSelected}
-                        className={`flex items-center px-3 sm:px-4 py-2 ${
-                          theme === "dark"
-                            ? "bg-[#2A2D31] text-gray-300 hover:bg-[#353A40]"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        } rounded transition-colors text-sm`}
-                      >
-                        <svg
-                          className="w-4 h-4 mr-1 sm:mr-2"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                        Complete All
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <button
-                  onClick={handleSelectAll}
-                  className={`flex items-center px-3 sm:px-4 py-2 ${
-                    theme === "dark"
-                      ? "bg-gray-800 hover:bg-gray-700 text-white"
-                      : "bg-gray-200 hover:bg-gray-300 text-gray-800"
-                  } rounded transition-colors text-sm`}
-                >
-                  <svg
-                    className="w-4 h-4 mr-1 sm:mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M4 6h16M4 10h16M4 14h16M4 18h16"
-                    />
-                  </svg>
-                  {selectedIssues.size > 0 ? "Deselect All" : "Select All"}
-                </button>
-              </div>
+          {/* Display error if analysis failed */}
+          {error && !analysisResult && (
+            <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded my-6 max-w-5xl mx-auto">
+              Analysis Error: {error.message}
             </div>
+          )}
 
-            {error && (
-              <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded mb-6 max-w-5xl mx-auto">
-                Error: {error.message}
+          {/* Display Stats and Issues only if analysis succeeded */}
+          {showStats && (
+            <>
+              <StatsDisplay
+                analysisData={analysisResult}
+                loading={false}
+                completedIssues={completedIssues}
+                changedIssueId={changedIssueId}
+                onScoreUpdate={handleScoreUpdate}
+              />
+
+              <div className="mt-8 sm:mt-16">
+                <div className="flex flex-col sm:flex-row sm:items-center mb-4 sm:mb-6 max-w-5xl mx-auto px-2">
+                  <h2
+                    className={`text-xl sm:text-2xl font-bold mb-4 sm:mb-0 ${
+                      theme === "dark" ? "text-white" : "text-gray-900"
+                    }`}
+                  >
+                    Issues to Address
+                  </h2>
+
+                  <div className="sm:ml-auto flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                    <AnimatePresence>
+                      {showBulkActions && (
+                        <motion.div
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          className="flex items-center space-x-2"
+                        >
+                          <span
+                            className={`text-sm ${
+                              theme === "dark"
+                                ? "text-gray-400"
+                                : "text-gray-600"
+                            }`}
+                          >
+                            {selectedIssues.size} selected
+                          </span>
+                          <button
+                            onClick={handleCompleteSelected}
+                            className={`flex items-center px-3 sm:px-4 py-2 ${
+                              theme === "dark"
+                                ? "bg-[#2A2D31] text-gray-300 hover:bg-[#353A40]"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            } rounded transition-colors text-sm`}
+                          >
+                            <svg
+                              className="w-4 h-4 mr-1 sm:mr-2"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                            Complete All
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <button
+                      onClick={handleSelectAll}
+                      className={`flex items-center px-3 sm:px-4 py-2 ${
+                        theme === "dark"
+                          ? "bg-gray-800 hover:bg-gray-700 text-white"
+                          : "bg-gray-200 hover:bg-gray-300 text-gray-800"
+                      } rounded transition-colors text-sm`}
+                    >
+                      <svg
+                        className="w-4 h-4 mr-1 sm:mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                        />
+                      </svg>
+                      {selectedIssues.size > 0 ? "Deselect All" : "Select All"}
+                    </button>
+                  </div>
+                </div>
+
+                <IssuesList
+                  recommendations={analysisResult?.recommendations}
+                  loading={false}
+                  onIssueStatusChange={handleIssueStatusChange}
+                  selectedIssues={selectedIssues}
+                  onSelectionChange={setSelectedIssues}
+                  completedIssues={completedIssues}
+                  repoOwner={repoOwner}
+                  repoName={repoName}
+                />
               </div>
-            )}
-
-            <IssuesList
-              recommendations={data?.recommendations}
-              loading={loading}
-              onIssueStatusChange={handleIssueStatusChange}
-              selectedIssues={selectedIssues}
-              onSelectionChange={setSelectedIssues}
-              completedIssues={completedIssues}
-              repoOwner={repoOwner}
-              repoName={repoName}
-            />
-          </div>
+            </>
+          )}
         </>
       )}
     </StatsLayout>

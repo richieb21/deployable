@@ -157,15 +157,15 @@ export const AnalysisView = ({
   const getSeverityColor = (severity: string) => {
     switch (severity?.toLowerCase()) {
       case "critical":
-        return theme === "dark" ? "text-red-300" : "text-red-800";
+        return theme === "dark" ? "text-red-300" : "text-red-700";
       case "high":
-        return theme === "dark" ? "text-orange-300" : "text-orange-800";
+        return theme === "dark" ? "text-orange-300" : "text-orange-700";
       case "medium":
-        return theme === "dark" ? "text-yellow-300" : "text-yellow-800";
+        return theme === "dark" ? "text-yellow-300" : "text-yellow-700";
       case "low":
-        return theme === "dark" ? "text-emerald-300" : "text-emerald-800";
+        return theme === "dark" ? "text-emerald-300" : "text-emerald-700";
       default:
-        return theme === "dark" ? "text-gray-300" : "text-gray-800";
+        return theme === "dark" ? "text-gray-300" : "text-gray-700";
     }
   };
 
@@ -173,15 +173,15 @@ export const AnalysisView = ({
   const getSeverityBgColor = (severity: string) => {
     switch (severity?.toLowerCase()) {
       case "critical":
-        return theme === "dark" ? "bg-red-800/60" : "bg-red-200";
+        return theme === "dark" ? "bg-red-800/60" : "bg-red-100/80";
       case "high":
-        return theme === "dark" ? "bg-orange-800/60" : "bg-orange-200";
+        return theme === "dark" ? "bg-orange-800/60" : "bg-orange-100/80";
       case "medium":
-        return theme === "dark" ? "bg-yellow-700/60" : "bg-yellow-200";
+        return theme === "dark" ? "bg-yellow-700/60" : "bg-yellow-100/80";
       case "low":
-        return theme === "dark" ? "bg-emerald-800/70" : "bg-emerald-200";
+        return theme === "dark" ? "bg-emerald-800/70" : "bg-emerald-100/80";
       default:
-        return theme === "dark" ? "bg-gray-800/60" : "bg-gray-200";
+        return theme === "dark" ? "bg-gray-800/60" : "bg-gray-100/80";
     }
   };
 
@@ -225,9 +225,9 @@ export const AnalysisView = ({
             {/* Repository Structure (3/12 = 25% on desktop, full width on mobile) */}
             <div
               className={`md:col-span-3 ${
-                theme === "dark" ? "bg-gray-900/60" : "bg-gray-50"
+                theme === "dark" ? "bg-[#1A1817]" : "bg-gray-50"
               } rounded-xl shadow-sm p-3 md:p-4 border ${
-                theme === "dark" ? "border-gray-800" : "border-gray-200"
+                theme === "dark" ? "border-[#1F1F1F]" : "border-gray-200"
               }
                 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
             >
@@ -246,9 +246,9 @@ export const AnalysisView = ({
             {/* Important Files (5/12 ≈ 42% on desktop, full width on mobile) */}
             <div
               className={`md:col-span-5 ${
-                theme === "dark" ? "bg-gray-900/60" : "bg-gray-50"
+                theme === "dark" ? "bg-[#1A1817]" : "bg-gray-50"
               } rounded-xl shadow-sm p-3 md:p-4 border ${
-                theme === "dark" ? "border-gray-800" : "border-gray-200"
+                theme === "dark" ? "border-[#1F1F1F]" : "border-gray-200"
               }
                 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
             >
@@ -270,9 +270,9 @@ export const AnalysisView = ({
             {/* Issues (4/12 ≈ 33% on desktop, full width on mobile) */}
             <div
               className={`md:col-span-4 ${
-                theme === "dark" ? "bg-gray-900/60" : "bg-gray-50"
+                theme === "dark" ? "bg-[#1A1817]" : "bg-gray-50"
               } rounded-xl shadow-sm p-3 md:p-4 border ${
-                theme === "dark" ? "border-gray-800" : "border-gray-200"
+                theme === "dark" ? "border-[#1F1F1F]" : "border-gray-200"
               }
                 ${theme === "dark" ? "text-white" : "text-gray-900"}`}
             >
@@ -309,7 +309,11 @@ export const AnalysisView = ({
                             {issue.title}
                           </div>
                           <div
-                            className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-200"}`}
+                            className={`text-xs ${
+                              theme === "dark"
+                                ? "text-gray-400"
+                                : "text-gray-500"
+                            }`}
                           >
                             {issue.file_path}
                           </div>

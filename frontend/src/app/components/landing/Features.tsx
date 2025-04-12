@@ -2,25 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/app/context/ThemeContext";
-import { motion, useSpring, useTransform } from "framer-motion";
-
-// Component to animate numbers
-const AnimatedNumber = ({ value }: { value: number }) => {
-  const spring = useSpring(value, {
-    mass: 0.8,
-    stiffness: 75,
-    damping: 15,
-  });
-  const display = useTransform(spring, (currentValue) =>
-    Math.round(currentValue)
-  );
-
-  useEffect(() => {
-    spring.set(value);
-  }, [spring, value]);
-
-  return <motion.span>{display}</motion.span>;
-};
+import { AnimatedNumber } from "@/app/components/ui/AnimatedNumber";
 
 export const Features = () => {
   const [stats, setStats] = useState({
@@ -31,8 +13,12 @@ export const Features = () => {
   const { theme } = useTheme();
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Get the WebSocket URL from environment variables
+  const wsUrl =
+    process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000/ws/stats";
+
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:8000/ws/stats");
+    const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
       console.log("Connected to WebSocket");
@@ -65,7 +51,7 @@ export const Features = () => {
       console.log("Closing WebSocket connection");
       ws.close();
     };
-  }, []);
+  }, [wsUrl]);
 
   // Effect for Intersection Observer
   useEffect(() => {
@@ -200,7 +186,10 @@ export const Features = () => {
               playsInline
               poster="/aws-video-poster.jpg"
             >
-              <source src="https://yangstevenwebsite.s3.us-east-1.amazonaws.com/marketloo.mp4" type="video/mp4" />
+              <source
+                src="https://yangstevenwebsite.s3.us-east-1.amazonaws.com/marketloo.mp4"
+                type="video/mp4"
+              />
               Your browser does not support the video tag.
             </video>
           </div>
@@ -209,24 +198,3 @@ export const Features = () => {
     </div>
   );
 };
-
-// Add keyframes and utility classes for animation
-const styles = `
-  @keyframes pulse-slow {
-    0%, 100% { opacity: 0.4; transform: scale(1); }
-    50% { opacity: 0.6; transform: scale(1.05); }
-  }
-  .animate-pulse-slow {
-    animation: pulse-slow 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-  .animation-delay-2000 {
-    animation-delay: 2s;
-  }
-`;
-
-if (typeof window !== "undefined") {
-  const styleSheet = document.createElement("style");
-  styleSheet.type = "text/css";
-  styleSheet.innerText = styles;
-  document.head.appendChild(styleSheet);
-}

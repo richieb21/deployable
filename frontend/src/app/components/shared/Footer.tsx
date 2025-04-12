@@ -13,12 +13,14 @@ export const Footer = () => {
 
   return (
     <footer
+      className={`py-6 sm:py-8 ${
+        theme === "dark"
+          ? "text-gray-400 border-none"
+          : "text-gray-500 border-t border-gray-100"
+      }`}
       style={{
-        backgroundColor: theme === "dark" ? "#121212" : "#f9fafb",
-        color: theme === "dark" ? "#6b7280" : "#9ca3af",
-        borderTop: theme === "dark" ? "none" : "1px solid #f3f4f6",
+        backgroundColor: "var(--bg-color)",
       }}
-      className="py-6 sm:py-8"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center text-xs sm:text-sm">
