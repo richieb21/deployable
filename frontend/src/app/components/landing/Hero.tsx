@@ -62,9 +62,6 @@ export const Hero = () => {
           }}
         >
           deployable
-          {theme === "dark" && (
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-300/30 to-transparent animate-shine" />
-          )}
         </h2>
         <p
           className="text-base md:text-xl max-w-2xl mx-auto px-2"
@@ -97,9 +94,7 @@ export const Hero = () => {
               {theme === "dark" && (
                 <>
                   <div className="absolute -inset-[2px] rounded-xl z-0 bg-gradient-to-r from-transparent via-green-500/50 to-transparent group-hover:animate-shine" />
-                  <div
-                    className={`absolute inset-0 rounded-xl z-[5] bg-[#1a1a1a]`}
-                  />
+                  <div className="absolute inset-0 rounded-xl z-[5] bg-[#1a1a1a]" />
                   <div className="absolute inset-[2px] rounded-lg z-[6] bg-gradient-to-r from-transparent via-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 </>
               )}
@@ -118,27 +113,6 @@ export const Hero = () => {
           </div>
           {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
         </form>
-
-        {/* Add keyframe animation for the shine effect */}
-        <style jsx global>{`
-          @keyframes shine {
-            0% {
-              transform: translateX(-100%) skewX(-15deg);
-              opacity: 0;
-            }
-            50% {
-              opacity: 0.5;
-            }
-            100% {
-              transform: translateX(100%) skewX(-15deg);
-              opacity: 0;
-            }
-          }
-          .animate-shine {
-            animation: shine 4s infinite;
-            mix-blend-mode: overlay;
-          }
-        `}</style>
       </div>
     </div>
   );

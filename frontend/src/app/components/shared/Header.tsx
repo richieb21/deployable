@@ -7,22 +7,17 @@ import { ThemeToggle } from "@/app/components/shared/ThemeToggle";
 import { useTheme } from "@/app/context/ThemeContext";
 
 export interface HeaderProps {
-  variant?: "dark" | "light";
   onRefresh?: () => void;
 }
 
-export const Header = ({ variant = "dark", onRefresh }: HeaderProps) => {
+export const Header = ({ onRefresh }: HeaderProps) => {
   const pathname = usePathname();
   const isStatsPage = pathname === "/stats";
   const { theme } = useTheme();
 
-  // Use the theme context to determine the actual variant
-  const effectiveVariant =
-    variant === "dark" || theme === "dark" ? "dark" : "light";
-
   // Define header styles based on page and theme
   const headerStyles = isStatsPage
-    ? effectiveVariant === "dark"
+    ? theme === "dark"
       ? "bg-[#121212]/80 backdrop-blur-md"
       : "bg-[#f9fafb]/80 backdrop-blur-md"
     : ""; // No background, blur, or border on landing page
@@ -33,7 +28,7 @@ export const Header = ({ variant = "dark", onRefresh }: HeaderProps) => {
         <Link href="/" className="flex items-center gap-2">
           <Image
             src={
-              effectiveVariant === "dark" ? "/logo_light.png" : "/logo_dark.png"
+              theme === "dark" ? "/lightdeployable.png" : "/darkdeployable.png"
             }
             alt="deployable"
             width={32}
@@ -41,7 +36,7 @@ export const Header = ({ variant = "dark", onRefresh }: HeaderProps) => {
           />
           <span
             className={`text-lg font-semibold ${
-              effectiveVariant === "dark" ? "text-white" : "text-gray-900"
+              theme === "dark" ? "text-white" : "text-gray-900"
             }`}
           >
             deployable
@@ -77,7 +72,7 @@ export const Header = ({ variant = "dark", onRefresh }: HeaderProps) => {
             target="_blank"
             rel="noopener noreferrer"
             className={`${
-              effectiveVariant === "dark"
+              theme === "dark"
                 ? "text-gray-400 hover:text-white"
                 : "text-gray-600 hover:text-orange-600"
             } transition-colors`}
@@ -106,7 +101,7 @@ export const Header = ({ variant = "dark", onRefresh }: HeaderProps) => {
             target="_blank"
             rel="noopener noreferrer"
             className={`${
-              effectiveVariant === "dark"
+              theme === "dark"
                 ? "text-gray-400 hover:text-white"
                 : "text-gray-600 hover:text-orange-600"
             } transition-colors`}

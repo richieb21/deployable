@@ -6,6 +6,11 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Theme variables for landing page */
+  --bg-color: #f9fafb;
+  --text-color: #1f2937;
+  --bg-gradient: linear-gradient(to bottom, #f9fafb, #ffffff, #f9fafb);
 }
 
 /* Remove the html selector and apply font-family to root */
@@ -13,11 +18,14 @@
   font-family: "Space Grotesk", system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+
+  /* Dark theme variables for landing page */
+  --bg-color: #121212;
+  --text-color: #f9fafb;
+  --bg-gradient: linear-gradient(to bottom, #121212, #1a1817, #121212);
 }
 
 body {
@@ -27,4 +35,44 @@ body {
 
 .animated-logo .pupil {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animations for UI elements */
+@keyframes shine {
+  0% {
+    transform: translateX(-100%) skewX(-15deg);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateX(100%) skewX(-15deg);
+    opacity: 0;
+  }
+}
+
+.animate-shine {
+  animation: shine 4s infinite;
+  mix-blend-mode: overlay;
+}
+
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
 }
