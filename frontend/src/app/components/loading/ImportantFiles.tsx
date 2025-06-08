@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
+import React from "react";
 
 interface ImportantFilesProps {
   key_files: {
@@ -14,7 +15,7 @@ interface ImportantFilesProps {
 
 type StackCategory = "frontend" | "backend" | "infra";
 
-export const ImportantFiles = ({
+const ImportantFiles = ({
   key_files,
   highlightedFiles = new Set(),
 }: ImportantFilesProps) => {
@@ -28,9 +29,21 @@ export const ImportantFiles = ({
   });
   const [animatedFiles, setAnimatedFiles] = useState<Set<string>>(new Set());
 
+  // Memoize the maximum number of files to optimize animations
+  const maxFilesPerSection = useMemo(() => {
+    return Math.max(
+      key_files.frontend.length,
+      key_files.backend.length,
+      key_files.infra.length
+    );
+  }, [key_files]);
+
   useEffect(() => {
     const sections: StackCategory[] = ["frontend", "backend", "infra"];
     let currentIndex = 0;
+
+    // Limit animation timing based on file count
+    const fileAnimationDurationPerItem = maxFilesPerSection > 50 ? 50 : 100;
 
     const showNextSection = () => {
       if (currentIndex >= sections.length) return;
@@ -39,7 +52,9 @@ export const ImportantFiles = ({
       setVisibleSections((prev) => [...prev, section]);
 
       // Calculate total animation time for files in this section
-      const fileAnimationDuration = key_files[section].length * 100 + 300; // 100ms per file + 300ms buffer
+      const fileAnimationDuration =
+        Math.min(key_files[section].length, 10) * fileAnimationDurationPerItem +
+        300;
 
       // Schedule next section after current section's files are done
       setTimeout(() => {
@@ -50,31 +65,44 @@ export const ImportantFiles = ({
 
     // Start the sequence
     showNextSection();
-  }, [key_files]);
+  }, [key_files, maxFilesPerSection]);
 
   // When section becomes visible, show its files
   useEffect(() => {
     const lastVisibleSection = visibleSections[visibleSections.length - 1];
     if (!lastVisibleSection || !key_files[lastVisibleSection]) return;
 
-    key_files[lastVisibleSection].forEach((file, index) => {
+    // Batch file updates for better performance with large lists
+    const batchSize = 10;
+    const totalFiles = key_files[lastVisibleSection].length;
+
+    for (let i = 0; i < totalFiles; i += batchSize) {
+      const batch = key_files[lastVisibleSection].slice(i, i + batchSize);
+
       setTimeout(
         () => {
           setVisibleFiles((prev) => ({
             ...prev,
-            [lastVisibleSection]: [...prev[lastVisibleSection], file],
+            [lastVisibleSection]: [...prev[lastVisibleSection], ...batch],
           }));
 
-          // If file is already highlighted, add it to animated files after a short delay
-          if (highlightedFiles.has(file)) {
-            setTimeout(() => {
-              setAnimatedFiles((prev) => new Set([...prev, file]));
-            }, 100);
-          }
+          // Process highlighted files in batch
+          setTimeout(() => {
+            const newHighlighted = batch.filter((file) =>
+              highlightedFiles.has(file)
+            );
+            if (newHighlighted.length > 0) {
+              setAnimatedFiles((prev) => {
+                const updated = new Set(prev);
+                newHighlighted.forEach((file) => updated.add(file));
+                return updated;
+              });
+            }
+          }, 50);
         },
-        100 * (index + 1)
+        Math.floor(i / batchSize) * 100
       );
-    });
+    }
   }, [visibleSections, key_files, highlightedFiles]);
 
   // Add newly highlighted files to animated files
@@ -162,3 +190,7 @@ export const ImportantFiles = ({
     </div>
   );
 };
+
+// Export with React.memo to prevent unnecessary re-renders
+export const MemoizedImportantFiles = React.memo(ImportantFiles);
+export { MemoizedImportantFiles as ImportantFiles };

@@ -65,7 +65,10 @@ async def event_generator(analysis_id: str):
 # start stream
 @router.post("/start", response_model=AnalysisStreamStartResponse)
 async def start_analysis_stream():
-    """Register an analysis queue that can be streamed to"""
+    """
+    Register an analysis queue that can be streamed to
+    See system-design/issue-generation.md for full design details.
+    """
     analysis_id = str(uuid4())
     analysis_streams[analysis_id] = asyncio.Queue()
 
@@ -75,7 +78,10 @@ async def start_analysis_stream():
 # connect to stream (get request)
 @router.get("/analysis/{analysis_id}")
 async def stream_analysis_connection(analysis_id: str):
-    """Establish a streaming connection to begin receiving events"""
+    """
+    Establish a streaming connection to begin receiving events
+    See system-design/issue-generation.md for full design details.
+    """
     logger.info(f"Starting stream for analysis_id: {analysis_id}")
 
     return StreamingResponse(

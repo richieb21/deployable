@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
  * GitHub Issues API Route
  *
  * This API route handles the creation of GitHub issues by proxying requests to the backend server.
+ * See system-design/github-issue-creation.md for full design details.
  *
  * Example request body:
  * {

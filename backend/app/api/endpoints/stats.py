@@ -21,6 +21,30 @@ async def stats_websocket(
         await websocket.accept()
         logger.info("WebSocket connection accepted")
 
+        # Handle case when Redis is not available
+        if redis_client is None:
+            logger.warning("Redis client not available, sending default stats")
+            default_stats = {
+                "repos": 0,
+                "files": 0,
+                "recommendations": 0,
+            }
+            await websocket.send_json(default_stats)
+            
+            # Keep connection alive but don't try to subscribe to Redis
+            while not is_closing:
+                try:
+                    # Send heartbeat every 30 seconds to keep connection alive
+                    import asyncio
+                    await asyncio.sleep(30)
+                    if websocket.client_state == WebSocketState.CONNECTED:
+                        await websocket.send_json(default_stats)
+                except Exception as e:
+                    logger.error(f"Error in heartbeat loop: {str(e)}")
+                    is_closing = True
+                    break
+            return
+
         try:
             pipe = redis_client.pipeline()
             pipe.get("deployable:stats:repos")
@@ -38,8 +62,13 @@ async def stats_websocket(
             await websocket.send_json(stats)
         except Exception as e:
             logger.error(f"Error sending initial stats: {str(e)}")
-            await websocket.close(code=1011, reason="Failed to get initial stats")
-            return
+            # Send default stats instead of closing connection
+            default_stats = {
+                "repos": 0,
+                "files": 0,
+                "recommendations": 0,
+            }
+            await websocket.send_json(default_stats)
 
         # subscribe to the channel and propagate notification to frontend connections
         pubsub = redis_client.pubsub()

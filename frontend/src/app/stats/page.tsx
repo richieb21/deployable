@@ -11,6 +11,12 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
 
+/**
+ * Stats Page
+ *
+ * This page displays the real-time analysis of a repository.
+ * See system-design/issue-generation.md for full design details.
+ */
 export default function StatsPage() {
   const { theme } = useTheme();
   const searchParams = useSearchParams();

@@ -8,6 +8,7 @@ import { useTheme } from "@/app/context/ThemeContext";
  * Hero Component
  *
  * The main landing page hero section with a repository input form.
+ * See system-design/issue-generation.md for full design details.
  */
 export const Hero = () => {
   const [url, setUrl] = useState("");

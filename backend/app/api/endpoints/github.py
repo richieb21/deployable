@@ -32,7 +32,10 @@ class IssueResponse(BaseModel):
 
 @router.post("/issues", response_model=IssueResponse)
 async def create_issue(request: CreateIssueRequest):
-    """Create a GitHub issue in the specified repository."""
+    """
+    Create a GitHub issue in the specified repository.
+    See system-design/github-issue-creation.md for full design details.
+    """
     try:
         logger.info(
             f"Received request to create issue in {request.owner}/{request.repo}"

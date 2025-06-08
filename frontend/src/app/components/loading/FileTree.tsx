@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import React from "react";
 
 interface FileNode {
   name: string;
@@ -14,7 +15,7 @@ interface FileTreeProps {
   className?: string;
 }
 
-export const FileTree = ({ files, className = "" }: FileTreeProps) => {
+const FileTree = ({ files, className = "" }: FileTreeProps) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
     new Set()
   );
@@ -177,3 +178,7 @@ export const FileTree = ({ files, className = "" }: FileTreeProps) => {
     </div>
   );
 };
+
+// Export with React.memo to prevent unnecessary re-renders
+export const MemoizedFileTree = React.memo(FileTree);
+export { MemoizedFileTree as FileTree };
