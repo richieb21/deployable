@@ -25,10 +25,7 @@ export const StatsLayout = ({
         color: theme === "dark" ? "#f9fafb" : "#111827",
       }}
     >
-      <Header
-        variant={theme === "dark" ? "dark" : "light"}
-        onRefresh={onRefresh}
-      />
+      <Header onRefresh={onRefresh} />
       <div className="flex-grow w-full mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8 sm:py-16">
         <div className="text-center mb-8 sm:mb-12">
           <h1

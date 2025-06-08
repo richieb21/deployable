@@ -34,7 +34,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-CURRENT_LLM_PROIVDER = "groq"
+CURRENT_LLM_PROIVDER = "deepseek"
 recommendations_lock = threading.Lock()
 
 
@@ -136,6 +136,7 @@ async def analyze_repository(
     """
     Analyze a GitHub repository for deployment readiness using multiple parallel LLM clients.
     Can operate in streaming mode if analysis_id is provided, otherwise runs synchronously.
+    See system-design/issue-generation.md for full design details.
     """
     overall_start_time = time.time()
     logger.info(f"Starting analysis for repository: {analysis_request.repo_url}")
@@ -259,6 +260,7 @@ async def identify_key_files(
 ):
     """
     Identify all files and key files within a Github Repository
+    See system-design/issue-generation.md for full design details.
     """
     repo_url = str(key_files_request.repo_url)
 

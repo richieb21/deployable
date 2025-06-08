@@ -29,6 +29,12 @@ interface StreamingAnalysisState {
   error: Error | null;
 }
 
+/**
+ * Custom hook to manage the streaming analysis of a repository.
+ * It handles the entire lifecycle of fetching key files, initiating the analysis,
+ * and processing real-time events from the backend.
+ * See system-design/issue-generation.md for full design details.
+ */
 export function useStreamingAnalysis(repoUrl: string) {
   const [state, setState] = useState<StreamingAnalysisState>({
     files: [],

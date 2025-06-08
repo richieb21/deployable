@@ -11,6 +11,7 @@
  *
  * The component delegates rendering of individual issues to the IssueItem component
  * for better separation of concerns and maintainability.
+ * See system-design/github-issue-creation.md for full design details.
  */
 
 "use client";
