@@ -78,3 +78,20 @@ export interface IdentifyKeyFilesResponse {
     infra: string[];
   };
 }
+
+// Prompt Generation Types
+export interface PromptGenerationRequest {
+  title: string;
+  description: string;
+  file_path: string;
+  severity: string;
+  category: string;
+  action_items?: string[];
+  code_snippets?: CodeSnippet;
+  references?: string[];
+}
+
+export interface PromptGenerationResponse {
+  prompt: string;
+  generated_at: string;
+}

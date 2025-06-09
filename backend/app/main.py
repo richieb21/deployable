@@ -8,6 +8,7 @@ from app.api.endpoints import (
     twitterbot,
     twitter_test,
     stats,
+    prompt,
 )
 from app.core.logging_config import setup_logging
 from app.core.limiter import limiter
@@ -48,6 +49,7 @@ TWITTER_ENABLED = os.getenv("TWITTER_ENABLED", "false").lower() == "true"
 app.include_router(analysis.router)
 app.include_router(github.router)
 app.include_router(streaming.router)
+app.include_router(prompt.router)
 
 if TWITTER_ENABLED:
     app.include_router(twitterbot.router)

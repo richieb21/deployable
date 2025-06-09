@@ -8,10 +8,12 @@
  * - Persisting issue status in localStorage
  * - Handling issue expansion/collapse
  * - Creating GitHub issues via API
+ * - Generating Cursor prompts via API
  *
  * The component delegates rendering of individual issues to the IssueItem component
  * for better separation of concerns and maintainability.
  * See system-design/github-issue-creation.md for full design details.
+ * See system-design/cursor-prompt-generation.md for prompt generation details.
  */
 
 "use client";
@@ -23,6 +25,8 @@ import { useTheme } from "@/app/context/ThemeContext";
 import IssueItem from "@/app/components/display/IssueItem";
 import { AnimatedLogo } from "@/app/components/ui/AnimatedLogo";
 import ErrorModal from "@/app/components/shared/ErrorModal";
+import PromptModal from "@/app/components/shared/PromptModal";
+import { usePromptGeneration } from "@/app/hooks/usePromptGeneration";
 
 // Get severity weight for sorting (higher number = higher severity)
 const getSeverityWeight = (severity: string): number => {
@@ -93,6 +97,16 @@ export const IssuesList = ({
     message: "",
     showExplanation: false,
   });
+
+  // Initialize prompt generation hook
+  const {
+    generatePrompt: generatePromptHook,
+    getPromptState,
+    isModalOpen: isPromptModalOpen,
+    currentPrompt,
+    currentIssueTitle,
+    closeModal: closePromptModal,
+  } = usePromptGeneration();
 
   // Load created issues from Redis on mount
   useEffect(() => {
@@ -388,6 +402,27 @@ ${issue.category}
     }
   };
 
+  // Generate prompt handler
+  const handleGeneratePrompt = async (
+    issue: Recommendation,
+    issueId: string,
+    event: React.MouseEvent
+  ) => {
+    event.stopPropagation(); // Prevent expanding/collapsing when clicking the button
+
+    try {
+      await generatePromptHook(issue, issueId);
+    } catch (error) {
+      // Error handling is already done in the hook
+      setErrorModal({
+        isOpen: true,
+        title: "Error Generating Prompt",
+        message:
+          error instanceof Error ? error.message : "Failed to generate prompt",
+      });
+    }
+  };
+
   // Sort recommendations: first by completion status, then by severity
   const sortedRecommendations = [...recommendations].sort((a, b) => {
     const aCompleted = completedIssues[`${a.title}-${a.file_path}`] || false;
@@ -435,6 +470,7 @@ ${issue.category}
           const isCompleted = completedIssues[issueId] || false;
           const isCreated = !!createdIssues[issueId];
           const isCreatingIssueItem = isCreatingIssue[issueId] || false;
+          const promptState = getPromptState(issueId);
 
           return (
             <IssueItem
@@ -445,11 +481,13 @@ ${issue.category}
               isCompleted={isCompleted}
               isCreated={isCreated}
               isCreatingIssue={isCreatingIssueItem}
+              isGeneratingPrompt={promptState.isGenerating}
               expandedIssue={expandedIssue}
               createdIssueInfo={createdIssues[issueId]}
               handleToggleExpand={handleToggleExpand}
               toggleIssueCompletion={toggleIssueCompletion}
               createGitHubIssue={createGitHubIssue}
+              generatePrompt={handleGeneratePrompt}
             />
           );
         })}
@@ -462,6 +500,14 @@ ${issue.category}
         message={errorModal.message}
         showExplanation={errorModal.showExplanation}
         onClose={() => setErrorModal({ ...errorModal, isOpen: false })}
+      />
+
+      {/* Prompt Modal */}
+      <PromptModal
+        isOpen={isPromptModalOpen}
+        title={currentIssueTitle}
+        prompt={currentPrompt || ""}
+        onClose={closePromptModal}
       />
     </div>
   );

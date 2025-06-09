@@ -120,3 +120,25 @@ class AnalysisStreamStartRequest(BaseModel):
 
 class AnalysisStreamStartResponse(BaseModel):
     analysis_id: str
+
+
+# Prompt Generation Models
+class CodeSnippets(BaseModel):
+    before: Optional[str] = None
+    after: Optional[str] = None
+
+
+class PromptGenerationRequest(BaseModel):
+    title: str = Field(..., description="Issue title")
+    description: str = Field(..., description="Issue description")
+    file_path: str = Field(..., description="File path where the issue is located")
+    severity: str = Field(..., description="Issue severity level")
+    category: str = Field(..., description="Issue category")
+    action_items: Optional[List[str]] = Field(default_factory=list, description="Action items to fix the issue")
+    code_snippets: Optional[CodeSnippets] = Field(default=None, description="Code snippets before and after")
+    references: Optional[List[str]] = Field(default_factory=list, description="References and documentation links")
+
+
+class PromptGenerationResponse(BaseModel):
+    prompt: str = Field(..., description="Generated cursor-compatible prompt")
+    generated_at: str = Field(..., description="Timestamp when prompt was generated")

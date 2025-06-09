@@ -6,6 +6,7 @@
  * - Visual indicators for issue severity and completion status
  * - Buttons for marking issues as complete
  * - Functionality to create GitHub issues
+ * - Functionality to generate Cursor prompts
  *
  * This component handles the presentation and interaction for a single issue,
  * while delegating the rendering of detailed issue content to the IssueDetails component.
@@ -39,6 +40,7 @@ interface IssueItemProps {
   isCompleted: boolean;
   isCreated: boolean;
   isCreatingIssue: boolean;
+  isGeneratingPrompt: boolean;
   expandedIssue: number | null;
   createdIssueInfo?: {
     url: string;
@@ -47,6 +49,11 @@ interface IssueItemProps {
   handleToggleExpand: (index: number) => void;
   toggleIssueCompletion: (issueId: string, event: React.MouseEvent) => void;
   createGitHubIssue: (
+    issue: Recommendation,
+    issueId: string,
+    event: React.MouseEvent
+  ) => void;
+  generatePrompt: (
     issue: Recommendation,
     issueId: string,
     event: React.MouseEvent
@@ -60,11 +67,13 @@ const IssueItem = ({
   isCompleted,
   isCreated,
   isCreatingIssue,
+  isGeneratingPrompt,
   expandedIssue,
   createdIssueInfo,
   handleToggleExpand,
   toggleIssueCompletion,
   createGitHubIssue,
+  generatePrompt,
 }: IssueItemProps) => {
   const { theme } = useTheme();
   const severityColor = getSeverityColor(issue.severity as IssueSeverity);
@@ -261,6 +270,57 @@ const IssueItem = ({
                         : "Create Issue"}
                   </span>
                 </button>
+
+                {/* Generate Prompt Button */}
+                <button
+                  onClick={(e) => generatePrompt(issue, issueId, e)}
+                  disabled={isGeneratingPrompt}
+                  style={{
+                    backgroundColor: isGeneratingPrompt
+                      ? theme === "dark"
+                        ? "#374151"
+                        : "#d1d5db"
+                      : theme === "dark"
+                        ? "#2A2D31"
+                        : "#e5e7eb",
+                    color: isGeneratingPrompt
+                      ? theme === "dark"
+                        ? "#9ca3af"
+                        : "#4b5563"
+                      : theme === "dark"
+                        ? "#d1d5db"
+                        : "#374151",
+                  }}
+                  className="flex items-center px-2 sm:px-4 py-1 sm:py-2 rounded-md transition-colors duration-200 hover:bg-opacity-90 text-xs sm:text-sm flex-1 sm:flex-auto justify-center sm:justify-start"
+                >
+                  <svg
+                    className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    {isGeneratingPrompt ? (
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        className="animate-spin"
+                      />
+                    ) : (
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    )}
+                  </svg>
+                  <span className="whitespace-nowrap">
+                    {isGeneratingPrompt ? "Generating..." : "Generate Prompt"}
+                  </span>
+                </button>
+
                 <button
                   onClick={(e) => toggleIssueCompletion(issueId, e)}
                   className="flex items-center px-2 sm:px-4 py-1 sm:py-2 rounded-md transition-colors duration-200 text-xs sm:text-sm flex-1 sm:flex-auto justify-center sm:justify-start"

@@ -107,7 +107,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const data: IssueResponse = await response.json();
+    const text = await response.text();
+    if (!text) {
+      return NextResponse.json({}, { status: response.status });
+    }
+    const data: IssueResponse = JSON.parse(text);
     console.log("Successfully created issue:", data);
     return NextResponse.json(data, { status: 200 });
   } catch (error) {
